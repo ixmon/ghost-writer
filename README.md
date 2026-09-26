@@ -1,8 +1,22 @@
 # GhostWriter
 
-**AI-powered fiction writing system** that runs against a local LLM (llama.cpp, vLLM, Ollama, or any OpenAI-compatible server).
+GhostWriter is a way to write a long novel with an AI while you stay in charge of the structure. It talks to a local or hosted OpenAI-compatible model (llama.cpp, vLLM, Ollama, or a hosted API).
 
-GhostWriter helps you write long novels with strong structural control. It keeps a rich machine-readable YAML outline (characters, world, chapter-by-chapter synopses, key events, emotional beats, POV, locations) and uses that context on every generation pass so the model stays consistent across 80k–150k words.
+You chat until the outline feels right, then lock that outline in. The model drafts a chapter from it. You edit the prose yourself or with the AI. The model scores the chapter and rewrites it. You tweak the result and run that loop again until the chapter is one you want to keep.
+
+The locked outline is a YAML config: characters, world, and a chapter-by-chapter plan with a synopsis, key events, emotional beat, point of view, and location. Every draft is written against that plan, so a book can stay consistent across 80k–150k words. Chat can propose changes to the outline. Nothing in it changes on disk until you accept.
+
+## How a book gets written
+
+1. **Chat the outline into shape.** Open a book and use the Chat tab. Ask for characters, turns, missing chapters, or a different ending. The model reads the outline and the chapters, then proposes edits. Accept a proposal to apply it, or reject it and keep talking.
+
+2. **Lock the outline.** When the plan is the one you want, stop changing it. That YAML file is what Compose follows. You can still edit it by hand in the Config tab.
+
+3. **Flesh out a chapter.** Run Compose on one chapter, or on the whole book. The model writes the prose from the locked plan.
+
+4. **Edit.** Change the chapter in the editor, or ask Chat or Revise to change it. Manual edits and model edits share the same file, and each save keeps a numbered backup.
+
+5. **Score, rewrite, repeat.** Review reads the chapter against the outline and scores it. Revise rewrites from that critique. Polish repeats review and revise until the score reaches the bar you set, or you stop it. Read the result, tweak the lines you care about, and run another pass when you want one.
 
 ---
 
@@ -11,7 +25,7 @@ GhostWriter helps you write long novels with strong structural control. It keeps
 - **Genesis** — Turn a creative prompt into a detailed, editable story config
 - **Compose** — Generate full prose chapters with character-perspective simulation
 - **Iterative quality tools** — `review`, `revise`, `polish`, `audit`, `distill`, `evolve`, `restructure`
-- **Web UI** (port 8501) — Library of books, chapter editor, live YAML config editor, streaming console, and a powerful **Book AI chat** that can read your outline and *propose structural changes* via tool calling
+- **Web UI** (port 8501) — Library, chapter editor, live YAML editor, streaming console, and the Chat tab where you build the outline and accept or reject each proposed change
 - **Versioned backups** — Every save and pipeline step creates `_vN` snapshots
 - **PDF export** — Via pandoc + weasyprint (or your own toolchain)
 
@@ -110,11 +124,10 @@ ghostwriter-web
 `0.0.0.0` is the web app, so other machines on your LAN can open it. The LLM endpoint is separate and still defaults to `127.0.0.1:8080`. Change the bind address with `web.host` in the config, `GHOSTWRITER_WEB_HOST`, or `ghostwriter-web --host 127.0.0.1`.
 
 The UI lets you:
-- Create new books from prompts ("New Book" button)
-- Browse your library
-- Edit chapters and the YAML config live
-- Run any pipeline command with real-time streaming output
-- Chat with an AI co-author that understands your entire book and can suggest outline changes
+- Create a book and chat until the outline is the one you want to lock
+- Edit that outline and the chapter prose by hand
+- Run Compose, Review, Revise, and Polish with streaming output
+- Accept or reject each structural change before it touches the files
 
 Host and port fields in the UI start from the config. Leave them alone unless you want one run to hit a different server.
 
@@ -172,7 +185,7 @@ File keys live under `[llm]`, `[library]`, and `[web]` in the TOML. Environment 
 | `llm.strict_openai` | `GHOSTWRITER_STRICT_OPENAI` | `false` (on for `*.api.x.ai`) | Omit llama.cpp-only request fields |
 | `llm.temperature` | `GHOSTWRITER_TEMPERATURE` | `0.88` | Default sampling temperature |
 | `llm.max_tokens` | `GHOSTWRITER_MAX_TOKENS` | `16384` | Default max tokens |
-| `library.path` | `GHOSTWRITER_LIBRARY` | `~/ghostwriter` | Where book projects are stored. `BOOKWRIGHT_LIBRARY` is still honored |
+| `library.path` | `GHOSTWRITER_LIBRARY` | `~/ghostwriter` | Where book projects are stored |
 | `web.host` | `GHOSTWRITER_WEB_HOST` | `0.0.0.0` | Interface the web UI binds |
 | `web.port` | `GHOSTWRITER_WEB_PORT` | `8501` | Web UI port |
 
@@ -184,42 +197,40 @@ You can point several machines at the same library directory. The web UI scans i
 
 ## The AI Chat (Web UI)
 
-The "Chat" tab is special. It is a tool-calling agent that can:
+The Chat tab is where the outline gets built. It can read any part of the config or any chapter, search the plan, and propose changes (`add_chapter`, `update_chapter`, `add_character`, `replace_section`, and so on).
 
-- Read any section of your config or any chapter
-- Search the outline
-- Propose changes (`add_chapter`, `update_chapter`, `add_character`, `replace_section`, etc.)
-
-When the model wants to change something, it shows you a **proposal** that you can accept or reject before it touches your files. This keeps you in control while giving the AI real agency over structure.
+A proposal stays on screen until you accept or reject it. Accepting is what writes the outline. That is the lock you are choosing, one edit at a time.
 
 ---
 
 ## Common Workflows
 
-1. **New novel**
-   - Web UI → ✨ New Book (or CLI `genesis`)
-   - Edit the generated YAML until you're happy
-   - Run `compose` (or "Compose" in the console tab)
-   - Use `review` + `revise` or the `polish` loop on weak chapters
+1. **A new novel, one chapter at a time**
+   - Web UI → New Book, or CLI `genesis`, to get a first YAML draft
+   - Chat until the outline is right, and accept only the proposals you want
+   - Compose the chapter you are ready to write
+   - Edit it in the chapter editor, or with Chat / Revise
+   - Review to score it, then Revise or Polish, and tweak until you are happy
+   - Move to the next chapter with the same outline still locked
 
 2. **Existing manuscript**
-   - Drop your chapters into a folder + write a minimal `config.yaml`
-   - Run `distill` to let GhostWriter extract a rich outline from the prose
-   - Then iterate with `review`/`polish`/`evolve`
+   - Drop your chapters into a folder and write a minimal `config.yaml`
+   - Run `distill` to extract an outline from the prose
+   - Then use the same review, edit, and polish loop
 
-3. **Heavy revision pass**
-   - `audit` (pre-composition sanity check)
-   - `polish --min-score 85 --max-rounds 5`
-   - `restructure` on chapters that grew too large
+3. **A hard pass on a weak chapter**
+   - `audit` checks the outline before more prose is written
+   - `polish --min-score 85 --max-rounds 5` keeps scoring and rewriting
+   - `restructure` splits a chapter whose plan got too large
 
 ---
 
 ## Tips for Best Results
 
-- The quality of the **outline** (especially `key_events`, `emotional_beat`, and `synopsis` per chapter) has a bigger impact than prompt engineering.
-- Keep the LLM context window large (16k–64k+). GhostWriter sends a lot of grounding context.
-- Use the web UI's AI chat early and often — it's excellent for discovering plot holes and suggesting new chapters.
-- Versioned backups mean you can always roll back.
+- Finish the outline before you spend passes on prose. `key_events`, `emotional_beat`, and `synopsis` do more for a chapter than prompt tweaks.
+- Keep the context window large (16k–64k+). Each draft is sent with a lot of the locked plan.
+- Chat is for discovering holes and changing the plan. Compose, Review, and Polish are for the prose once that plan is locked.
+- Versioned backups mean you can roll a chapter or the outline back to an earlier save.
 
 ---
 
@@ -264,6 +275,3 @@ Pull requests and issues are welcome, especially around:
 - UI/UX improvements
 - Export formats
 
----
-
-*GhostWriter was previously known as BookWright during early development.*
