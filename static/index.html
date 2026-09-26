@@ -19,6 +19,7 @@
             <img src="/static/icons/ghostwriter-icon-ghost-book-black.jpg" class="app-icon" alt="GhostWriter">
             <span>GhostWriter</span>
         </div>
+        <div class="header-endpoint" id="llm-header-note"></div>
         <nav class="breadcrumb" id="breadcrumb">
             <a href="#" onclick="showLibrary()">Library</a>
         </nav>
@@ -42,6 +43,7 @@
 
         <!-- Book View -->
         <div id="book-view" class="book-view">
+            <div id="book-run-status" class="book-run-status" hidden></div>
             <div class="tab-bar">
                 <button class="tab-btn active" data-tab="chapters" onclick="switchTab('chapters')">📑 Chapters</button>
                 <button class="tab-btn" data-tab="config" onclick="switchTab('config')">⚙️ Config</button>
@@ -91,22 +93,6 @@
                             <option value="">All</option>
                         </select>
                     </div>
-                    <div class="toolbar-group">
-                        <label>Host</label>
-                        <input type="text" id="console-host" value="127.0.0.1" style="width:160px" />
-                    </div>
-                    <div class="toolbar-group">
-                        <label>Port</label>
-                        <input type="number" id="console-port" value="8080" />
-                    </div>
-                    <div class="toolbar-group">
-                        <label>Max Tokens</label>
-                        <input type="number" id="console-max-tokens" value="16384" />
-                    </div>
-                    <div class="toolbar-group">
-                        <label>Temp</label>
-                        <input type="number" id="console-temp" value="0.88" step="0.05" style="width:70px" />
-                    </div>
                     <div class="toolbar-group" id="strategy-group" style="display:none">
                         <label>Strategy</label>
                         <select id="console-strategy">
@@ -148,7 +134,27 @@
                     <button class="btn btn-danger" id="console-cancel-btn" onclick="consoleCancel()"
                         style="display:none">■ Cancel</button>
                 </div>
-                <div class="endpoint-note" id="llm-endpoint-note"></div>
+                <details class="model-details">
+                    <summary>Model settings</summary>
+                    <div class="model-details-body">
+                        <div class="toolbar-group">
+                            <label>Host</label>
+                            <input type="text" id="console-host" value="127.0.0.1" style="width:160px" />
+                        </div>
+                        <div class="toolbar-group">
+                            <label>Port</label>
+                            <input type="number" id="console-port" value="8080" />
+                        </div>
+                        <div class="toolbar-group">
+                            <label>Max Tokens</label>
+                            <input type="number" id="console-max-tokens" value="16384" />
+                        </div>
+                        <div class="toolbar-group">
+                            <label>Temp</label>
+                            <input type="number" id="console-temp" value="0.88" step="0.05" style="width:70px" />
+                        </div>
+                    </div>
+                </details>
                 <div class="console-output" id="console-output">
                     <span class="line line-dim">Select a command and click Run to start...</span>
                 </div>
@@ -160,17 +166,13 @@
                     <div class="chat-messages" id="chat-messages">
                         <div class="chat-welcome">
                             <div class="chat-welcome-icon">💬</div>
-                            <h3>Book AI Assistant</h3>
-                            <p>Ask questions about your book, brainstorm ideas, or request config changes.</p>
-                            <div class="chat-suggestions">
-                                <button onclick="chatSend('Who are the main characters?')">Who are the main
-                                    characters?</button>
-                                <button onclick="chatSend('Summarize the plot so far')">Summarize the plot</button>
-                                <button onclick="chatSend('What happens in chapter 1?')">What happens in Ch 1?</button>
-                            </div>
+                            <h3>Shape the outline</h3>
+                            <p>Talk through the plan. When a proposal looks right, accept it to lock that change in.</p>
+                            <div class="chat-suggestions" id="chat-welcome-suggestions"></div>
                         </div>
                     </div>
                     <div class="chat-input-area">
+                        <div class="chat-suggestion-row" id="chat-suggestion-row"></div>
                         <div class="chat-input-row">
                             <textarea id="chat-input" placeholder="Ask about your book..." rows="1"
                                 onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend()}"
@@ -183,11 +185,14 @@
                                 </svg>
                             </button>
                         </div>
-                        <div class="chat-settings">
-                            <label>Host <input type="text" id="chat-host" value="127.0.0.1" /></label>
-                            <label>Port <input type="number" id="chat-port" value="8080" /></label>
-                            <label>Temp <input type="number" id="chat-temp" value="0.7" step="0.05" /></label>
-                        </div>
+                        <details class="model-details">
+                            <summary>Model settings</summary>
+                            <div class="chat-settings">
+                                <label>Host <input type="text" id="chat-host" value="127.0.0.1" /></label>
+                                <label>Port <input type="number" id="chat-port" value="8080" /></label>
+                                <label>Temp <input type="number" id="chat-temp" value="0.7" step="0.05" /></label>
+                            </div>
+                        </details>
                     </div>
                 </div>
             </div>
@@ -212,12 +217,15 @@
                     <textarea id="genesis-prompt" rows="4"
                         placeholder="A cyberpunk heist in Neo-Tokyo, 2087..."></textarea>
                 </div>
-                <div class="form-row">
-                    <div class="form-group"><label>Host</label><input type="text" id="genesis-host" value="127.0.0.1" />
+                <details class="model-details">
+                    <summary>Model settings</summary>
+                    <div class="form-row">
+                        <div class="form-group"><label>Host</label><input type="text" id="genesis-host" value="127.0.0.1" />
+                        </div>
+                        <div class="form-group"><label>Port</label><input type="number" id="genesis-port" value="8080" />
+                        </div>
                     </div>
-                    <div class="form-group"><label>Port</label><input type="number" id="genesis-port" value="8080" />
-                    </div>
-                </div>
+                </details>
                 <div id="genesis-output" class="console-output"
                     style="display:none; min-height:200px; max-height:300px; margin-top:1rem;"></div>
             </div>
@@ -235,6 +243,10 @@
     <script>
         // ─── State ─────────────────────────────────────────────────────
         let currentBook = null;
+        let currentChapter = null;
+        let readerState = null;
+        let stayOnChapter = null;
+        let runExitCode = null;
         let currentConfig = null;
         let configPath = null;
         let chaptersData = [];
@@ -287,6 +299,8 @@
 
         function showLibrary() {
             currentBook = null;
+            currentChapter = null;
+            renderChatSuggestions();
             document.getElementById('library-view').classList.add('active');
             document.getElementById('book-view').classList.remove('active');
             document.getElementById('book-view').style.display = 'none';
@@ -298,6 +312,7 @@
         // ─── Open Book ─────────────────────────────────────────────────
         async function openBook(name) {
             currentBook = name;
+            currentChapter = null;
             document.getElementById('library-view').style.display = 'none';
             document.getElementById('book-view').style.display = 'block';
             document.getElementById('book-view').classList.add('active');
@@ -343,43 +358,47 @@
         }
 
         // ─── Chapters ──────────────────────────────────────────────────
+        function chapterStatusLabel(status) {
+            if (status === 'planned') return 'not written';
+            return status || 'draft';
+        }
+
+        function scoreHtml(score) {
+            if (score === null || score === undefined || score < 0) return '';
+            return `<span class="score-pill${score >= 80 ? ' high' : ''}">${score}</span>`;
+        }
+
         async function loadChapters() {
             const list = document.getElementById('chapter-list');
             try {
                 const data = await api(`/books/${currentBook}/chapters`);
                 chaptersData = data.chapters;
                 if (!chaptersData.length) {
-                    list.innerHTML = '<div class="empty-state"><div class="icon">📑</div><p>No chapters yet</p></div>';
+                    list.innerHTML = '<div class="empty-state"><div class="icon">📑</div><p>No chapters in the outline yet. Use Chat to shape the plan.</p></div>';
                     return;
                 }
 
-                let chapterConfigs = getChapterConfigs();
-
                 list.innerHTML = chaptersData.map(c => {
-                    const cfg = chapterConfigs.find(cc => cc.number === c.number)
-                        || chapterConfigs[c.number - 1];
-                    const title = cfg?.title || `Chapter ${c.number}`;
-                    const pov = cfg?.pov_character || '';
+                    const title = c.title || `Chapter ${c.number}`;
+                    const words = c.status === 'planned' ? 'Not written' : formatWords(c.word_count);
+                    const versions = c.versions > 0
+                        ? `<span>${c.versions} version${c.versions > 1 ? 's' : ''}</span>` : '';
                     return `
                 <div class="chapter-row" onclick="readChapter(${c.number})">
-                    <div class="chapter-num ${c.status}">${c.number}</div>
+                    <div class="chapter-num ${esc(c.status)}">${c.number}</div>
                     <div class="chapter-info">
                         <div class="ch-title">${esc(title)}</div>
                         <div class="ch-meta">
-                            <span>${formatWords(c.word_count)}</span>
-                            ${pov ? `<span>POV: ${esc(pov)}</span>` : ''}
-                            ${c.versions > 0 ? `<span>${c.versions} version${c.versions > 1 ? 's' : ''}</span>` : ''}
+                            <span>${words}</span>
+                            ${c.pov_character ? `<span>POV: ${esc(c.pov_character)}</span>` : ''}
+                            ${scoreHtml(c.score)}
+                            ${versions}
                         </div>
                     </div>
                     <div class="chapter-actions">
-                        <span class="badge badge-${c.status}">${c.status}</span>
-                        ${c.has_review ? '<button class="btn btn-sm" onclick="event.stopPropagation(); readChapterWithReview(' + c.number + ')" title="View review">📝</button>' : ''}
-                        <button class="btn btn-sm" onclick="event.stopPropagation(); runForChapter('compose', ${c.number})" title="Generate">✍</button>
-                        <button class="btn btn-sm" onclick="event.stopPropagation(); runForChapter('review', ${c.number})" title="Review">🔍</button>
-                        <button class="btn btn-sm" onclick="event.stopPropagation(); runForChapter('revise', ${c.number})" title="Revise">🔄</button>
+                        <span class="badge badge-${esc(c.status)}">${esc(chapterStatusLabel(c.status))}</span>
                     </div>
-                </div>
-            `;
+                </div>`;
                 }).join('');
             } catch (e) {
                 list.innerHTML = `<div class="empty-state"><p>Error: ${esc(e.message)}</p></div>`;
@@ -387,99 +406,189 @@
         }
 
         // ─── Reader ────────────────────────────────────────────────────
-        async function readChapter(num) {
-            switchTab('reader');
-            const panel = document.getElementById('reader-panel');
-            panel.className = 'reader-panel active chapter-only';
-            panel.innerHTML = '<div class="loading"><div class="spinner"></div> Loading...</div>';
-
-            try {
-                const data = await api(`/books/${currentBook}/chapters/${num}`);
-                num = parseInt(num);
-                const cfgArr = getChapterConfigs();
-                const cfg = cfgArr.find(c => parseInt(c.number) === num) || cfgArr[num - 1];
-                const title = cfg?.title || `Chapter ${num}`;
-                const html = markdownToHtml(data.content);
-
-                panel.innerHTML = `
-            <div class="reader-column">
-                <div class="reader-column-header">
-                    <span>Chapter ${num}: ${esc(title)}</span>
-                    <span style="color: var(--text-dim); font-weight: 400">${formatWords(data.word_count)}</span>
-                </div>
-                <div class="reader-content">${html}</div>
-            </div>
-        `;
-            } catch (e) {
-                panel.innerHTML = `<div class="empty-state"><p>${esc(e.message)}</p></div>`;
-            }
+        function planColumnHtml(outline) {
+            const plan = outline || {};
+            const events = (plan.key_events || [])
+                .map(event => `<li>${esc(String(event))}</li>`).join('');
+            return `
+                <aside class="plan-column">
+                    <div class="plan-kicker">Locked plan</div>
+                    <h3>${esc(plan.title || 'Untitled chapter')}</h3>
+                    ${plan.pov_character ? `<div>POV: ${esc(plan.pov_character)}</div>` : ''}
+                    ${plan.location ? `<div>${esc(plan.location)}</div>` : ''}
+                    ${plan.emotional_beat ? `<div class="plan-kicker">Emotional beat</div><div>${esc(plan.emotional_beat)}</div>` : ''}
+                    ${plan.synopsis ? `<div class="plan-kicker">Synopsis</div><div>${esc(plan.synopsis)}</div>` : ''}
+                    ${events ? `<div class="plan-kicker">Key events</div><ul>${events}</ul>` : ''}
+                </aside>`;
         }
 
-        async function readChapterWithReview(num) {
+        async function readChapter(num) {
             switchTab('reader');
+            currentChapter = parseInt(num);
+            renderChatSuggestions();
             const panel = document.getElementById('reader-panel');
             panel.className = 'reader-panel active';
             panel.innerHTML = '<div class="loading"><div class="spinner"></div> Loading...</div>';
-
             try {
-                const [chData, revData] = await Promise.all([
-                    api(`/books/${currentBook}/chapters/${num}`),
-                    api(`/books/${currentBook}/reviews/${num}`).catch(() => ({ content: 'No review available.' })),
-                ]);
-                const cfgArr2 = getChapterConfigs();
-                const cfg = cfgArr2.find(c => parseInt(c.number) === parseInt(num)) || cfgArr2[parseInt(num) - 1];
-                const title = cfg?.title || `Chapter ${num}`;
-
-                panel.innerHTML = `
-            <div class="reader-column">
-                <div class="reader-column-header">
-                    <span>📖 Chapter ${num}: ${esc(title)}</span>
-                    <span style="color: var(--text-dim); font-weight: 400">${formatWords(chData.word_count)}</span>
-                </div>
-                <div class="reader-content">${markdownToHtml(chData.content)}</div>
-            </div>
-            <div class="reader-column">
-                <div class="reader-column-header">
-                    <span>📝 Review</span>
-                    <button class="btn btn-sm" onclick="editReview(${num})">Edit</button>
-                </div>
-                <div class="review-content">${markdownToHtml(revData.content)}</div>
-            </div>
-        `;
+                const data = await api(`/books/${currentBook}/chapters/${num}`);
+                let review = null;
+                if (data.has_review) {
+                    review = await api(`/books/${currentBook}/reviews/${num}`).catch(() => null);
+                }
+                readerState = {
+                    number: data.number,
+                    content: data.content || '',
+                    exists: data.exists !== false && !!(data.content || '').trim(),
+                    versions: data.versions || [],
+                    outline: data.outline || {},
+                    score: data.score,
+                    wordCount: data.word_count || 0,
+                    review,
+                    viewingVersion: null,
+                    editing: false,
+                };
+                renderReader();
             } catch (e) {
                 panel.innerHTML = `<div class="empty-state"><p>${esc(e.message)}</p></div>`;
             }
         }
 
-        async function editReview(num) {
-            try {
-                const data = await api(`/books/${currentBook}/reviews/${num}`).catch(() => ({ content: '' }));
-                const panel = document.querySelector('#reader-panel .reader-column:last-child');
-                const header = panel.querySelector('.reader-column-header');
-                const content = panel.querySelector('.review-content');
+        function readChapterWithReview(num) {
+            return readChapter(num);
+        }
 
-                header.innerHTML = `
-            <span>📝 Review (editing)</span>
-            <div>
-                <button class="btn btn-sm btn-primary" onclick="saveReview(${num})">Save</button>
-                <button class="btn btn-sm" onclick="readChapterWithReview(${num})">Cancel</button>
-            </div>
-        `;
-                content.innerHTML = `<textarea id="review-editor" style="width:100%; height:100%; min-height:400px; background:var(--bg-input); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text-primary); font-family:var(--font-body); font-size:0.9rem; padding:1rem; resize:none;">${esc(data.content)}</textarea>`;
+        function renderReader() {
+            const state = readerState;
+            if (!state) return;
+            const panel = document.getElementById('reader-panel');
+            const title = state.outline.title || `Chapter ${state.number}`;
+            const versionOptions = (state.versions || []).map(item =>
+                `<option value="${item.version}" ${state.viewingVersion === item.version ? 'selected' : ''}>Version ${item.version}</option>`
+            ).join('');
+            const banner = state.viewingVersion ? `
+                <div class="reader-banner">
+                    <span>Viewing version ${state.viewingVersion}. The current chapter stays as it is until you restore this one.</span>
+                    <button class="btn btn-sm btn-primary" onclick="restoreChapterVersion(${state.number}, ${state.viewingVersion})">Restore this version</button>
+                    <button class="btn btn-sm" onclick="readChapter(${state.number})">Back to current</button>
+                </div>` : '';
+            const prose = state.editing
+                ? `<textarea id="chapter-editor" class="chapter-editor">${esc(state.content)}</textarea>`
+                : `<div class="reader-content">${state.content.trim() ? markdownToHtml(state.content) : '<div class="empty-state"><p>This chapter is in the outline and has not been written.</p></div>'}</div>`;
+            const editButtons = state.viewingVersion ? '' : (state.editing
+                ? `<button class="btn btn-sm btn-primary" onclick="saveChapterEdit(${state.number})">Save</button>
+                   <button class="btn btn-sm" onclick="readChapter(${state.number})">Cancel</button>`
+                : `<button class="btn btn-sm" onclick="startChapterEdit()">Edit</button>`);
+            const runButtons = state.viewingVersion ? '' : `
+                <button class="btn btn-sm" onclick="runForChapter('compose', ${state.number})">Compose</button>
+                <button class="btn btn-sm" onclick="runForChapter('review', ${state.number})" ${state.exists ? '' : 'disabled'}>Review</button>
+                <button class="btn btn-sm" onclick="runForChapter('revise', ${state.number})" ${state.exists ? '' : 'disabled'}>Revise</button>`;
+            const reviewScore = state.review ? scoreHtml(state.review.score ?? state.score) : scoreHtml(state.score);
+            const reviewColumn = (!state.viewingVersion && state.review) ? `
+                <div class="reader-column">
+                    <div class="reader-column-header">
+                        <span>Review ${reviewScore}</span>
+                        <button class="btn btn-sm" onclick="editReview(${state.number})">Edit</button>
+                    </div>
+                    <div class="review-content" id="review-body">${markdownToHtml(state.review.content || '')}</div>
+                </div>` : '';
+            panel.innerHTML = `
+                <div class="reader-workspace">
+                    <div class="reader-toolbar">
+                        <strong>Chapter ${state.number}: ${esc(title)}</strong>
+                        <span style="color:var(--text-dim)">${state.exists ? formatWords(state.wordCount) : 'Not written'}</span>
+                        ${state.viewingVersion ? '' : reviewScore}
+                        ${editButtons}
+                        ${runButtons}
+                        ${versionOptions ? `<select aria-label="Chapter versions" onchange="viewChapterVersion(${state.number}, this.value)"><option value="">Current</option>${versionOptions}</select>` : ''}
+                    </div>
+                    ${banner}
+                    <div class="reader-columns ${reviewColumn ? 'with-review' : ''}">
+                        ${planColumnHtml(state.outline)}
+                        <div class="reader-column">
+                            <div class="reader-column-header">
+                                <span>${state.editing ? 'Editing' : (state.viewingVersion ? 'Saved version' : 'Prose')}</span>
+                            </div>
+                            ${prose}
+                        </div>
+                        ${reviewColumn}
+                    </div>
+                </div>`;
+        }
+
+        function startChapterEdit() {
+            if (!readerState || readerState.viewingVersion) return;
+            readerState.editing = true;
+            renderReader();
+        }
+
+        async function saveChapterEdit(num) {
+            const editor = document.getElementById('chapter-editor');
+            if (!editor) return;
+            try {
+                const saved = await api(`/books/${currentBook}/chapters/${num}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ content: editor.value }),
+                });
+                toast(saved.backup ? 'Chapter saved. Previous text kept as a version.' : 'Chapter saved');
+                await loadChapters();
+                await readChapter(num);
             } catch (e) {
                 toast(e.message, 'error');
             }
         }
 
+        async function viewChapterVersion(num, version) {
+            if (!version) {
+                await readChapter(num);
+                return;
+            }
+            try {
+                const data = await api(`/books/${currentBook}/chapters/${num}/versions/${version}`);
+                readerState.viewingVersion = parseInt(version, 10);
+                readerState.content = data.content || '';
+                readerState.wordCount = data.word_count || 0;
+                readerState.editing = false;
+                renderReader();
+            } catch (e) {
+                toast(e.message, 'error');
+            }
+        }
+
+        async function restoreChapterVersion(num, version) {
+            try {
+                await api(`/books/${currentBook}/chapters/${num}/restore`, {
+                    method: 'POST',
+                    body: JSON.stringify({ version }),
+                });
+                toast(`Restored version ${version}`);
+                await loadChapters();
+                await readChapter(num);
+            } catch (e) {
+                toast(e.message, 'error');
+            }
+        }
+
+        function editReview(num) {
+            const body = document.getElementById('review-body');
+            if (!body || !readerState?.review) return;
+            body.innerHTML = `<textarea id="review-editor" class="review-editor">${esc(readerState.review.content || '')}</textarea>
+                <div style="padding:0.75rem 1rem">
+                    <button class="btn btn-sm btn-primary" onclick="saveReview(${num})">Save</button>
+                    <button class="btn btn-sm" onclick="readChapter(${num})">Cancel</button>
+                </div>`;
+        }
+
         async function saveReview(num) {
-            const content = document.getElementById('review-editor').value;
+            const editor = document.getElementById('review-editor');
+            if (!editor) return;
             try {
                 await api(`/books/${currentBook}/reviews/${num}`, {
                     method: 'PUT',
-                    body: JSON.stringify({ content }),
+                    body: JSON.stringify({ content: editor.value }),
                 });
                 toast('Review saved');
-                readChapterWithReview(num);
+                await loadChapters();
+                await readChapter(num);
             } catch (e) {
                 toast(e.message, 'error');
             }
@@ -925,11 +1034,11 @@
                 const diskCh = diskMap[num];
                 const cfg = configChapters.find(c => parseInt(c.number) === num)
                          || configChapters[num - 1];
-                const title = cfg?.title || `Chapter ${num}`;
+                const title = diskCh?.title || cfg?.title || `Chapter ${num}`;
 
                 let label = `${num}. ${esc(title)}`;
-                if (!diskCh) {
-                    label += ' (not generated yet)';
+                if (!diskCh || diskCh.status === 'planned' || !diskCh.file) {
+                    label += ' (not written)';
                 }
 
                 sel.innerHTML += `<option value="${num}">${label}</option>`;
@@ -997,6 +1106,7 @@
 
                             if (text.startsWith('[EXIT:')) {
                                 const code = text.match(/\[EXIT:(\d+)\]/)?.[1];
+                                runExitCode = code;
                                 if (code === '0') {
                                     appendLine('\n✅ Completed successfully', 'success');
                                 } else {
@@ -1025,8 +1135,18 @@
                     appendLine(`\n❌ Error: ${e.message}`, 'error');
                 }
             } finally {
+                const returnTo = stayOnChapter;
+                const code = runExitCode;
+                stayOnChapter = null;
+                runExitCode = null;
                 setConsoleState(false);
                 await loadChapters();
+                if (returnTo != null) {
+                    await readChapter(returnTo);
+                    if (code && code !== '0') {
+                        toast('The run stopped before it finished. The console has the log.', 'error');
+                    }
+                }
             }
         }
 
@@ -1042,8 +1162,28 @@
             }
         }
 
+        function paintRunStatus() {
+            const bar = document.getElementById('book-run-status');
+            if (!bar) return;
+            if (stayOnChapter && consoleRunning) {
+                bar.hidden = false;
+                const cmd = document.getElementById('console-cmd').value;
+                bar.innerHTML = `Running ${esc(cmd)} on chapter ${stayOnChapter}. <button class="btn btn-sm" onclick="switchTab('console')">Show log</button>`;
+            } else {
+                bar.hidden = true;
+                bar.innerHTML = '';
+            }
+        }
+
         function runForChapter(cmd, chapter) {
+            if (consoleRunning) {
+                toast('A command is already running', 'error');
+                return;
+            }
+            stayOnChapter = chapter;
+            runExitCode = null;
             document.getElementById('console-cmd').value = cmd;
+            onCmdChange();
             populateChapterPicker();
             const chapterSel = document.getElementById('console-chapter');
             for (const opt of chapterSel.options) {
@@ -1052,7 +1192,6 @@
                     break;
                 }
             }
-            switchTab('console');
             setTimeout(() => consoleRun(), 100);
         }
 
@@ -1073,6 +1212,7 @@
                 runBtn.style.display = '';
                 cancelBtn.style.display = 'none';
             }
+            paintRunStatus();
         }
 
         function appendLine(text, cls) {
@@ -1199,6 +1339,38 @@
         let chatStreaming = false;
         let pendingProposal = null;  // staged config proposal
 
+        function chatPromptList() {
+            if (currentChapter) {
+                const n = currentChapter;
+                return [
+                    [`What is still missing from chapter ${n}'s outline?`, `What's missing in chapter ${n}?`],
+                    [`Propose a tighter synopsis and key events for chapter ${n}.`, `Tighten chapter ${n}'s plan`],
+                    [`Where does the draft of chapter ${n} drift from the locked outline?`, `Check chapter ${n} against the plan`],
+                ];
+            }
+            return [
+                ['What holes are still in this outline?', 'Find holes in the outline'],
+                ['Propose the next chapter this book needs.', 'Propose the next chapter'],
+                ['Which character is underused in the plan?', 'Who is underused?'],
+            ];
+        }
+
+        function fillSuggestionButtons(container) {
+            if (!container) return;
+            container.innerHTML = chatPromptList().map(([prompt, label]) =>
+                `<button type="button">${esc(label)}</button>`
+            ).join('');
+            const prompts = chatPromptList();
+            container.querySelectorAll('button').forEach((button, index) => {
+                button.addEventListener('click', () => chatSend(prompts[index][0]));
+            });
+        }
+
+        function renderChatSuggestions() {
+            fillSuggestionButtons(document.getElementById('chat-suggestion-row'));
+            fillSuggestionButtons(document.getElementById('chat-welcome-suggestions'));
+        }
+
         function chatReset() {
             chatHistory = [];
             pendingProposal = null;
@@ -1206,14 +1378,11 @@
             el.innerHTML = `
                 <div class="chat-welcome">
                     <div class="chat-welcome-icon">💬</div>
-                    <h3>Book AI Assistant</h3>
-                    <p>Ask questions about your book, brainstorm ideas, or request config changes.</p>
-                    <div class="chat-suggestions">
-                        <button onclick="chatSend('Who are the main characters?')">Who are the main characters?</button>
-                        <button onclick="chatSend('Summarize the plot so far')">Summarize the plot</button>
-                        <button onclick="chatSend('What happens in chapter 1?')">What happens in Ch 1?</button>
-                    </div>
+                    <h3>Shape the outline</h3>
+                    <p>Talk through the plan. When a proposal looks right, accept it to lock that change in.</p>
+                    <div class="chat-suggestions" id="chat-welcome-suggestions"></div>
                 </div>`;
+            renderChatSuggestions();
         }
 
         function chatAppendMessage(role, content, extra) {
@@ -1344,13 +1513,14 @@
             for (const p of proposals) {
                 const card = document.createElement('div');
                 card.className = 'chat-proposal-card';
+                const changes = proposalChanges(currentConfig, p.section_data);
                 card.innerHTML = `
-                    <div class="proposal-header">📋 Proposed Config Change</div>
-                    <div class="proposal-desc">${escapeHtml(p.description)}</div>
-                    <div class="proposal-section">Section: <code>${escapeHtml(p.section)}</code></div>
+                    <div class="proposal-header">Proposed outline change</div>
+                    <div class="proposal-desc">${escapeHtml(p.description || '')}</div>
+                    ${proposalDiffHtml(changes)}
                     <div class="proposal-actions">
-                        <button class="btn btn-success proposal-apply">✅ Apply</button>
-                        <button class="btn btn-danger proposal-dismiss">❌ Dismiss</button>
+                        <button class="btn btn-success proposal-apply">Accept</button>
+                        <button class="btn btn-danger proposal-dismiss">Dismiss</button>
                     </div>`;
                 assistantBubble.closest('.chat-msg').appendChild(card);
 
@@ -1376,6 +1546,9 @@
                         // Reload config
                         const resp = await api(`/books/${currentBook}/config`);
                         currentConfig = resp.config;
+                        if (currentConfig) buildConfigEditor();
+                        await loadChapters();
+                        if (currentChapter) await readChapter(currentChapter);
                     } catch (e) {
                         toast(e.message, 'error');
                     }
@@ -1428,17 +1601,100 @@
                 setVal('chat-port', s.llm_port);
                 setVal('genesis-host', s.llm_host);
                 setVal('genesis-port', s.llm_port);
-                const note = document.getElementById('llm-endpoint-note');
+                const note = document.getElementById('llm-header-note');
                 if (note && s.llm_base_url) {
                     const model = s.llm_model ? ` · ${s.llm_model}` : '';
-                    note.textContent = `LLM ${s.llm_base_url}${model}`;
+                    note.textContent = `${s.llm_base_url}${model}`;
                 }
             } catch (err) {
                 console.warn('GhostWriter settings unavailable', err);
             }
         }
 
+        function normField(value) {
+            if (Array.isArray(value)) return value.map(item => String(item)).join('\n');
+            if (value == null) return '';
+            if (typeof value === 'object') return JSON.stringify(value, null, 2);
+            return String(value);
+        }
+
+        function chapterIndex(config) {
+            const map = new Map();
+            let chapters = config?.chapters || [];
+            if (chapters && !Array.isArray(chapters) && chapters.chapters) chapters = chapters.chapters;
+            if (!Array.isArray(chapters)) chapters = Object.values(chapters || {});
+            chapters.forEach((chapter, index) => {
+                if (!chapter || typeof chapter !== 'object') {
+                    map.set(index + 1, { title: String(chapter || '') });
+                    return;
+                }
+                const number = parseInt(chapter.number, 10) || index + 1;
+                map.set(number, chapter);
+            });
+            return map;
+        }
+
+        function proposalChanges(before, after) {
+            const changes = [];
+            if (!after || typeof after !== 'object') return changes;
+            if (!before) {
+                return [{ label: 'Outline', before: '', after: normField(after.title || after.synopsis) }];
+            }
+            for (const key of ['title', 'genre', 'synopsis', 'tone', 'pov']) {
+                const oldValue = normField(before[key]);
+                const newValue = normField(after[key]);
+                if (oldValue !== newValue) changes.push({ label: key, before: oldValue, after: newValue });
+            }
+            const beforeChapters = chapterIndex(before);
+            const afterChapters = chapterIndex(after);
+            const numbers = [...new Set([...beforeChapters.keys(), ...afterChapters.keys()])].sort((a, b) => a - b);
+            const fields = ['title', 'synopsis', 'pov_character', 'emotional_beat', 'location', 'key_events'];
+            for (const number of numbers) {
+                const oldChapter = beforeChapters.get(number);
+                const newChapter = afterChapters.get(number);
+                if (!oldChapter && newChapter) {
+                    changes.push({
+                        label: `Chapter ${number} added`,
+                        before: '',
+                        after: normField(newChapter.title || newChapter.synopsis),
+                    });
+                } else if (oldChapter && !newChapter) {
+                    changes.push({
+                        label: `Chapter ${number} removed`,
+                        before: normField(oldChapter.title),
+                        after: '',
+                    });
+                } else if (oldChapter && newChapter) {
+                    for (const field of fields) {
+                        const oldValue = normField(oldChapter[field] ?? (field === 'synopsis' ? oldChapter.summary : ''));
+                        const newValue = normField(newChapter[field] ?? (field === 'synopsis' ? newChapter.summary : ''));
+                        if (oldValue !== newValue) {
+                            changes.push({
+                                label: `Chapter ${number} ${field.replaceAll('_', ' ')}`,
+                                before: oldValue,
+                                after: newValue,
+                            });
+                        }
+                    }
+                }
+            }
+            return changes.slice(0, 8);
+        }
+
+        function proposalDiffHtml(changes) {
+            if (!changes.length) {
+                return '<div class="proposal-section">The outline text matches what is already saved.</div>';
+            }
+            return `<div class="proposal-diff">${changes.map(change => `
+                <div class="proposal-diff-row">
+                    <div class="proposal-diff-label">${escapeHtml(change.label)}</div>
+                    <div class="proposal-diff-before">${escapeHtml(change.before || '—')}</div>
+                    <div class="proposal-diff-after">${escapeHtml(change.after || '—')}</div>
+                </div>`).join('')}</div>`;
+        }
+
         applyRuntimeSettings();
+        renderChatSuggestions();
         loadLibrary();
     </script>
 </body>

@@ -58,7 +58,19 @@ body {
     height: 56px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 1.5rem;
+}
+
+.header-endpoint {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .app-logo {
@@ -293,9 +305,25 @@ body {
     color: var(--chapter-reviewed);
 }
 
-.chapter-num.empty {
+.chapter-num.empty,
+.chapter-num.planned {
     background: rgba(107, 114, 128, 0.15);
     color: var(--chapter-empty);
+}
+
+.score-pill {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0.1rem 0.45rem;
+}
+
+.score-pill.high {
+    color: var(--chapter-reviewed);
+    border-color: rgba(16, 185, 129, 0.45);
 }
 
 .chapter-info {
@@ -322,16 +350,119 @@ body {
 
 .reader-panel {
     display: none;
-    gap: 1.5rem;
 }
 
-.reader-panel.active {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-}
-
+.reader-panel.active,
 .reader-panel.chapter-only.active {
-    grid-template-columns: 1fr;
+    display: block;
+}
+
+.reader-workspace {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.reader-toolbar,
+.reader-banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.reader-toolbar select {
+    background: var(--bg-input);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.35rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+.reader-banner {
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: var(--radius-sm);
+    padding: 0.55rem 0.8rem;
+    font-size: 0.85rem;
+}
+
+.book-run-status {
+    margin-bottom: 0.75rem;
+    padding: 0.55rem 0.8rem;
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.book-run-status button {
+    margin-left: 0.5rem;
+}
+
+.reader-columns {
+    display: grid;
+    grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+}
+
+.reader-columns.with-review {
+    grid-template-columns: minmax(200px, 240px) minmax(0, 1.3fr) minmax(0, 1fr);
+}
+
+.plan-column {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.1rem;
+    font-size: 0.85rem;
+}
+
+.plan-column h3 {
+    font-size: 0.95rem;
+    margin-bottom: 0.35rem;
+}
+
+.plan-kicker {
+    color: var(--text-dim);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0.85rem 0 0.25rem;
+}
+
+.plan-column ul {
+    margin: 0;
+    padding-left: 1.1rem;
+}
+
+.chapter-editor {
+    width: 100%;
+    min-height: 60vh;
+    background: var(--bg-input);
+    border: none;
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    line-height: 1.7;
+    padding: 1.5rem 2rem;
+    resize: vertical;
+}
+
+.review-editor {
+    width: 100%;
+    min-height: 12rem;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    padding: 1rem 1.25rem;
+    resize: vertical;
 }
 
 .reader-column {
@@ -616,7 +747,8 @@ body {
     color: var(--chapter-reviewed);
 }
 
-.badge-empty {
+.badge-empty,
+.badge-planned {
     background: rgba(107, 114, 128, 0.12);
     color: var(--chapter-empty);
 }
@@ -1110,6 +1242,42 @@ body {
     line-height: 1.5;
 }
 
+.proposal-diff {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    margin: 0.75rem 0;
+}
+
+.proposal-diff-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.proposal-diff-label {
+    grid-column: 1 / -1;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.proposal-diff-before,
+.proposal-diff-after {
+    font-size: 0.78rem;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    background: var(--bg-primary);
+    border-radius: var(--radius-sm);
+    padding: 0.45rem 0.55rem;
+    max-height: 9rem;
+    overflow: auto;
+}
+
+.proposal-diff-before {
+    color: var(--text-dim);
+}
+
 .proposal-section {
     font-size: 0.75rem;
     color: var(--text-secondary);
@@ -1246,13 +1414,61 @@ body {
     width: 150px;
 }
 
-.endpoint-note {
-    margin: 0.15rem 0 0.85rem;
+.model-details {
+    margin: 0.35rem 0 0.75rem;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.model-details summary {
+    cursor: pointer;
     color: var(--text-dim);
     font-family: var(--font-mono);
     font-size: 0.75rem;
 }
 
+.model-details-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: end;
+    margin-top: 0.55rem;
+}
+
+.chat-suggestion-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 0.45rem;
+}
+
+.chat-suggestion-row button {
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0.25rem 0.7rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+
+.chat-suggestion-row button:hover {
+    border-color: var(--accent);
+    color: var(--text-primary);
+}
+
+
+@media (max-width: 900px) {
+    .reader-columns,
+    .reader-columns.with-review,
+    .proposal-diff-row {
+        grid-template-columns: 1fr;
+    }
+
+    .header-endpoint {
+        display: none;
+    }
+}
 
 @media (max-width: 768px) {
     .main-content {

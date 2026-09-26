@@ -87,6 +87,114 @@ def get_book_dir(name: str) -> str:
     return book_dir
 
 
+SCORE_RE = re.compile(r"SCORE:\s*(\d+)\s*/\s*100")
+
+
+def score_from_text(text: str) -> Optional[int]:
+    """Pull SCORE: NN/100 out of a review. Missing scores stay unset."""
+    match = SCORE_RE.search(text or "")
+    return int(match.group(1)) if match else None
+
+
+def review_score(path: str) -> Optional[int]:
+    if not os.path.isfile(path):
+        return None
+    with open(path) as handle:
+        return score_from_text(handle.read())
+
+
+def outline_by_number(config: dict) -> dict:
+    """Chapter plans from the YAML outline, keyed by chapter number."""
+    if not isinstance(config, dict):
+        return {}
+    from ghostwriter import get_chapters_list
+
+    found = {}
+    for index, chapter in enumerate(get_chapters_list(config)):
+        if isinstance(chapter, dict):
+            raw_number = chapter.get("number") or index + 1
+            try:
+                number = int(raw_number)
+            except (TypeError, ValueError):
+                number = index + 1
+            events = chapter.get("key_events") or []
+            if isinstance(events, str):
+                events = [line for line in events.splitlines() if line.strip()]
+            elif not isinstance(events, list):
+                events = []
+            found[number] = {
+                "title": chapter.get("title") or f"Chapter {number}",
+                "pov_character": chapter.get("pov_character") or "",
+                "synopsis": chapter.get("synopsis") or chapter.get("summary") or "",
+                "emotional_beat": chapter.get("emotional_beat") or "",
+                "location": chapter.get("location") or "",
+                "key_events": events,
+            }
+        else:
+            number = index + 1
+            found[number] = {
+                "title": str(chapter),
+                "pov_character": "",
+                "synopsis": "",
+                "emotional_beat": "",
+                "location": "",
+                "key_events": [],
+            }
+    return found
+
+
+def load_book_config(book_dir: str, book_name: str) -> dict:
+    config_path = find_config_for_book(book_dir, book_name)
+    if not config_path:
+        return {}
+    try:
+        with open(config_path) as handle:
+            data = yaml.safe_load(handle) or {}
+    except Exception:
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def chapter_path(book_dir: str, num: int) -> str:
+    return os.path.join(book_dir, f"chapter_{num:02d}.md")
+
+
+def version_path(book_dir: str, num: int, version: int) -> str:
+    return os.path.join(book_dir, f"chapter_{num:02d}_v{version}.md")
+
+
+def chapter_version_list(book_dir: str, num: int) -> list:
+    versions = sorted(glob.glob(os.path.join(book_dir, f"chapter_{num:02d}_v*.md")))
+    info = []
+    for path in versions:
+        match = re.match(r"chapter_\d+_v(\d+)\.md$", os.path.basename(path))
+        if match:
+            info.append({
+                "version": int(match.group(1)),
+                "file": os.path.basename(path),
+                "size": os.path.getsize(path),
+            })
+    return info
+
+
+def snapshot_chapter(book_dir: str, num: int) -> Optional[str]:
+    """Copy the current chapter to the next chapter_NN_vM.md backup."""
+    path = chapter_path(book_dir, num)
+    if not os.path.isfile(path):
+        return None
+    with open(path) as handle:
+        content = handle.read()
+    if not content.strip():
+        return None
+    version = 1
+    while os.path.exists(version_path(book_dir, num, version)):
+        version += 1
+    dest = version_path(book_dir, num, version)
+    with open(dest, "w") as handle:
+        handle.write(content)
+    return os.path.basename(dest)
+
+
 def scan_chapters(book_dir: str) -> list:
     """Scan a book directory for chapter files."""
     chapters = []
@@ -105,16 +213,15 @@ def scan_chapters(book_dir: str) -> list:
                 # Check for review file
                 review_path = os.path.join(book_dir, f"review_{num:02d}.md")
                 has_review = os.path.exists(review_path)
-                # Check for version backups
-                versions = sorted(glob.glob(
-                    os.path.join(book_dir, f"chapter_{num:02d}_v*.md")
-                ))
+                score = review_score(review_path) if has_review else None
+                versions = chapter_version_list(book_dir, num)
                 chapters.append({
                     "number": num,
                     "file": basename,
                     "size": size,
                     "word_count": word_count,
                     "has_review": has_review,
+                    "score": score,
                     "versions": len(versions),
                     "status": "empty" if size == 0 else "draft" if not has_review else "reviewed",
                 })
@@ -208,11 +315,13 @@ def list_books():
                 pass
 
         total_words = sum(c["word_count"] for c in chapters)
+        outline = outline_by_number(config_data) if isinstance(config_data, dict) else {}
+        chapter_numbers = set(outline) | {chapter["number"] for chapter in chapters}
         books.append({
             "name": entry,
             "title": title,
             "genre": config_data.get("genre", "") if config_data else "",
-            "chapter_count": len(chapters),
+            "chapter_count": len(chapter_numbers),
             "total_words": total_words,
             "has_config": config_path is not None,
             "config_file": os.path.basename(config_path) if config_path else None,
@@ -358,43 +467,125 @@ Write ONLY the synopsis text — no labels, no markdown, no quotes. It should re
 
 # ─── API: Chapters ──────────────────────────────────────────────────────
 
+def _with_outline(row: dict, plan: dict) -> dict:
+    number = row["number"]
+    row["title"] = plan.get("title") or f"Chapter {number}"
+    row["pov_character"] = plan.get("pov_character") or ""
+    row["synopsis"] = plan.get("synopsis") or ""
+    row["emotional_beat"] = plan.get("emotional_beat") or ""
+    row["location"] = plan.get("location") or ""
+    row["key_events"] = plan.get("key_events") or []
+    return row
+
+
 @app.get("/api/books/{name}/chapters")
 def list_chapters(name: str):
-    """List all chapters for a book."""
+    """List outline chapters and written files together."""
     book_dir = get_book_dir(name)
-    chapters = scan_chapters(book_dir)
+    on_disk = {chapter["number"]: chapter for chapter in scan_chapters(book_dir)}
+    outline = outline_by_number(load_book_config(book_dir, name))
+    chapters = []
+    for number in sorted(set(on_disk) | set(outline)):
+        plan = outline.get(number, {})
+        row = on_disk.get(number)
+        if row is None:
+            row = {
+                "number": number,
+                "file": None,
+                "size": 0,
+                "word_count": 0,
+                "has_review": False,
+                "score": None,
+                "versions": 0,
+                "status": "planned",
+            }
+        else:
+            row = dict(row)
+        chapters.append(_with_outline(row, plan))
     return {"chapters": chapters}
 
 
 @app.get("/api/books/{name}/chapters/{num}")
 def get_chapter(name: str, num: int):
-    """Get the content of a specific chapter."""
+    """Get a chapter. Unwritten outline chapters return an empty draft."""
     book_dir = get_book_dir(name)
-    chapter_path = os.path.join(book_dir, f"chapter_{num:02d}.md")
-    if not os.path.exists(chapter_path):
+    outline = outline_by_number(load_book_config(book_dir, name))
+    path = chapter_path(book_dir, num)
+    if os.path.isfile(path):
+        with open(path) as handle:
+            content = handle.read()
+        exists = True
+    elif num in outline:
+        content = ""
+        exists = False
+    else:
         raise HTTPException(404, f"Chapter {num} not found")
 
-    with open(chapter_path) as f:
-        content = f.read()
-
-    # Also get version list
-    versions = sorted(glob.glob(os.path.join(book_dir, f"chapter_{num:02d}_v*.md")))
-    version_info = []
-    for v in versions:
-        vname = os.path.basename(v)
-        vmatch = re.match(r"chapter_\d+_v(\d+)\.md$", vname)
-        if vmatch:
-            version_info.append({
-                "version": int(vmatch.group(1)),
-                "file": vname,
-                "size": os.path.getsize(v),
-            })
-
+    review_path = os.path.join(book_dir, f"review_{num:02d}.md")
+    plan = outline.get(num, {})
     return {
         "number": num,
         "content": content,
-        "word_count": len(content.split()),
-        "versions": version_info,
+        "exists": exists,
+        "word_count": len(content.split()) if content.strip() else 0,
+        "versions": chapter_version_list(book_dir, num),
+        "score": review_score(review_path),
+        "has_review": os.path.isfile(review_path),
+        "outline": {
+            "title": plan.get("title") or f"Chapter {num}",
+            "pov_character": plan.get("pov_character") or "",
+            "synopsis": plan.get("synopsis") or "",
+            "emotional_beat": plan.get("emotional_beat") or "",
+            "location": plan.get("location") or "",
+            "key_events": plan.get("key_events") or [],
+        },
+    }
+
+
+@app.get("/api/books/{name}/chapters/{num}/versions/{version}")
+def get_chapter_version(name: str, num: int, version: int):
+    """Read one numbered backup of a chapter."""
+    book_dir = get_book_dir(name)
+    path = version_path(book_dir, num, version)
+    if not os.path.isfile(path):
+        raise HTTPException(404, f"Version {version} of chapter {num} not found")
+    with open(path) as handle:
+        content = handle.read()
+    return {
+        "number": num,
+        "version": version,
+        "content": content,
+        "word_count": len(content.split()) if content.strip() else 0,
+    }
+
+
+class RestoreChapter(BaseModel):
+    version: int
+
+
+@app.post("/api/books/{name}/chapters/{num}/restore")
+def restore_chapter(name: str, num: int, body: RestoreChapter):
+    """Replace the current chapter with a backup, keeping the current text."""
+    book_dir = get_book_dir(name)
+    path = version_path(book_dir, num, body.version)
+    if not os.path.isfile(path):
+        raise HTTPException(404, f"Version {body.version} of chapter {num} not found")
+    with open(path) as handle:
+        content = handle.read()
+    current = chapter_path(book_dir, num)
+    backup = None
+    if os.path.isfile(current):
+        with open(current) as handle:
+            previous = handle.read()
+        if previous != content:
+            backup = snapshot_chapter(book_dir, num)
+    with open(current, "w") as handle:
+        handle.write(content)
+    return {
+        "status": "restored",
+        "version": body.version,
+        "backup": backup,
+        "word_count": len(content.split()) if content.strip() else 0,
     }
 
 
@@ -404,12 +595,22 @@ class ChapterUpdate(BaseModel):
 
 @app.put("/api/books/{name}/chapters/{num}")
 def update_chapter(name: str, num: int, update: ChapterUpdate):
-    """Save updated chapter content."""
+    """Save chapter prose. The previous text is kept as the next version."""
     book_dir = get_book_dir(name)
-    chapter_path = os.path.join(book_dir, f"chapter_{num:02d}.md")
-    with open(chapter_path, "w") as f:
-        f.write(update.content)
-    return {"status": "saved", "word_count": len(update.content.split())}
+    path = chapter_path(book_dir, num)
+    backup = None
+    if os.path.isfile(path):
+        with open(path) as handle:
+            previous = handle.read()
+        if previous != update.content:
+            backup = snapshot_chapter(book_dir, num)
+    with open(path, "w") as handle:
+        handle.write(update.content)
+    return {
+        "status": "saved",
+        "backup": backup,
+        "word_count": len(update.content.split()) if update.content.strip() else 0,
+    }
 
 
 # ─── API: Reviews ───────────────────────────────────────────────────────
@@ -423,7 +624,7 @@ def get_review(name: str, num: int):
         raise HTTPException(404, f"Review for chapter {num} not found")
     with open(review_path) as f:
         content = f.read()
-    return {"number": num, "content": content}
+    return {"number": num, "content": content, "score": score_from_text(content)}
 
 
 class ReviewUpdate(BaseModel):
