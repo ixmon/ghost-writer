@@ -29,15 +29,30 @@ GhostWriter helps you write long novels with strong structural control. It keeps
 
 ## Quick Start
 
-### 1. Install
+### 1. Run it
 
 From a clone of this repo:
+
+```bash
+python3 server.py
+# Listens on 0.0.0.0:8501 — open http://127.0.0.1:8501
+```
+
+If FastAPI and the other dependencies are already available, that Python is the one that runs. If they are not, the first launch creates a `.venv` in this directory, installs them, and starts the app with that environment. The install needs network access once. Later launches start directly.
+
+```bash
+python3 ghostwriter.py --help
+```
+
+uses the same launcher for the CLI.
+
+To put `ghostwriter` and `ghostwriter-web` on your PATH:
 
 ```bash
 pip install .
 ```
 
-That installs the dependencies, the web UI, and two commands: `ghostwriter` (the CLI) and `ghostwriter-web` (the UI). Use `pip install -e .` while you are changing the code. `python3 server.py` and `python3 ghostwriter.py` still work straight from the checkout.
+Use `pip install -e .` while you are changing the code. An environment that already has the dependencies is left as-is. GhostWriter does not create a second `.venv` in that case.
 
 ### 2. Point it at a model
 
@@ -83,7 +98,9 @@ export GHOSTWRITER_API_KEY="..."
 
 A `ghostwriter.toml` in the directory you launch from wins over `~/.config/ghostwriter/config.toml`. `GHOSTWRITER_CONFIG` wins over both. Environment variables and CLI flags win over the file. `ghostwriter.toml` is gitignored so a local key does not get committed. The example file lists every knob.
 
-### 3. Run the web interface
+### 3. Open the web interface
+
+`python3 server.py` from step 1 already serves the UI. After `pip install`, the same server is on your PATH:
 
 ```bash
 ghostwriter-web
@@ -124,6 +141,7 @@ ghostwriter --base-url http://127.0.0.1:11434/v1 --model qwen2.5:32b genesis "A 
 ghost-writer/
 ├── ghostwriter.py             # CLI engine (all the pipeline logic)
 ├── server.py                  # FastAPI web app
+├── bootstrap.py               # First-run .venv setup when dependencies are missing
 ├── settings.py                # Config-file and environment resolution
 ├── ghostwriter.example.toml   # Copy this, then point it at your model
 ├── static/                    # Single-page web UI

@@ -22,6 +22,11 @@ Usage:
   python3 ghostwriter.py review my_story.yaml
 """
 
+import bootstrap
+
+if __name__ == "__main__":
+    bootstrap.ensure_runtime(("yaml",))
+
 import argparse
 import json
 import os

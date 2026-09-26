@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """GhostWriter Web — FastAPI server for the GhostWriter book generation pipeline."""
 
+import bootstrap
+
+if __name__ == "__main__":
+    bootstrap.ensure_runtime(("fastapi", "httpx", "uvicorn", "yaml"))
+
 import argparse
 import os
 import re
