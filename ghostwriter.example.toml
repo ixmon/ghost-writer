@@ -1,0 +1,57 @@
+# GhostWriter runtime config.
+#
+# Copy this file to one of:
+#   ~/.config/ghostwriter/config.toml
+#   ./ghostwriter.toml          (next to the directory you launch from)
+# or set GHOSTWRITER_CONFIG=/path/to/config.toml
+#
+# A file in the current directory wins over the one in ~/.config.
+# Environment variables and CLI flags win over the file.
+# With no file at all, GhostWriter assumes llama.cpp at
+# http://127.0.0.1:8080/v1 and serves the web UI on 0.0.0.0:8501.
+
+[llm]
+# OpenAI-compatible API root, including /v1. Not the full /chat/completions path.
+#
+# llama.cpp:
+#   llama-server -m model.gguf --host 127.0.0.1 --port 8080 --ctx-size 32768
+base_url = "http://127.0.0.1:8080/v1"
+
+# Ollama:
+# base_url = "http://127.0.0.1:11434/v1"
+# model = "qwen2.5:32b"
+# strict_openai = true
+
+# vLLM or LM Studio use the same shape. Point base_url at their /v1 root.
+
+# xAI (https://docs.x.ai). Chat completions live at this root.
+# Put the key in the environment (XAI_API_KEY or GHOSTWRITER_API_KEY),
+# not in a file you might commit. strict_openai is assumed for *.api.x.ai
+# unless you set it here.
+# base_url = "https://api.x.ai/v1"
+# model = "grok-4.7"
+# strict_openai = true
+
+# Model id sent with every request. Leave blank for llama.cpp (it accepts
+# any value). Ollama and hosted APIs require a real id.
+model = ""
+
+# Optional bearer token. Prefer GHOSTWRITER_API_KEY or, for xAI, XAI_API_KEY.
+# api_key = ""
+
+# true drops llama.cpp-only fields (min_p, repeat_penalty, chat_template_kwargs)
+# that some servers reject with HTTP 400.
+strict_openai = false
+
+temperature = 0.88
+max_tokens = 16384
+
+[library]
+# Book projects are created here, outside this repository.
+path = "~/ghostwriter"
+
+[web]
+# ghostwriter-web binds here. 0.0.0.0 makes the UI reachable on your LAN.
+# This is the web app, not the LLM.
+host = "0.0.0.0"
+port = 8501

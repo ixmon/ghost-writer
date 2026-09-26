@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GhostWriter</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+
+    <!-- ─── Header ──────────────────────────────────────────────── -->
+    <header class="app-header">
+        <div class="app-logo" onclick="showLibrary()">
+            <img src="/static/icons/ghostwriter-icon-ghost-book-black.jpg" class="app-icon" alt="GhostWriter">
+            <span>GhostWriter</span>
+        </div>
+        <nav class="breadcrumb" id="breadcrumb">
+            <a href="#" onclick="showLibrary()">Library</a>
+        </nav>
+    </header>
+
+    <!-- ─── Main ────────────────────────────────────────────────── -->
+    <main class="main-content">
+
+        <!-- Library View -->
+        <div id="library-view" class="library-view active">
+            <div class="library-header">
+                <h1>📚 Library</h1>
+                <button class="btn btn-primary" onclick="showGenesisModal()">✨ New Book</button>
+            </div>
+            <div id="book-grid" class="book-grid">
+                <div class="loading">
+                    <div class="spinner"></div> Loading books...
+                </div>
+            </div>
+        </div>
+
+        <!-- Book View -->
+        <div id="book-view" class="book-view">
+            <div class="tab-bar">
+                <button class="tab-btn active" data-tab="chapters" onclick="switchTab('chapters')">📑 Chapters</button>
+                <button class="tab-btn" data-tab="config" onclick="switchTab('config')">⚙️ Config</button>
+                <button class="tab-btn" data-tab="reader" onclick="switchTab('reader')">📖 Reader</button>
+                <button class="tab-btn" data-tab="console" onclick="switchTab('console')">🖥️ Console</button>
+                <button class="tab-btn" data-tab="chat" onclick="switchTab('chat')">💬 Chat</button>
+            </div>
+
+            <!-- Chapters Tab -->
+            <div id="tab-chapters" class="tab-panel active">
+                <div id="chapter-list" class="chapter-list"></div>
+            </div>
+
+            <!-- Config Tab -->
+            <div id="tab-config" class="tab-panel">
+                <div class="config-editor">
+                    <nav class="config-nav" id="config-nav"></nav>
+                    <div class="config-panel" id="config-panel"></div>
+                </div>
+            </div>
+
+            <!-- Reader Tab -->
+            <div id="tab-reader" class="tab-panel">
+                <div id="reader-panel" class="reader-panel"></div>
+            </div>
+
+            <!-- Console Tab -->
+            <div id="tab-console" class="tab-panel">
+                <div class="console-toolbar">
+                    <div class="toolbar-group">
+                        <label>Command</label>
+                        <select id="console-cmd" onchange="onCmdChange()">
+                            <option value="compose">✍ Compose</option>
+                            <option value="review">📝 Review</option>
+                            <option value="revise">🔄 Revise</option>
+                            <option value="audit">🔎 Audit</option>
+                            <option value="polish">✨ Polish</option>
+                            <option value="distill">🧪 Distill</option>
+                            <option value="evolve">🧬 Evolve</option>
+                            <option value="restructure">🔪 Restructure</option>
+                            <option value="pdf">📄 PDF</option>
+                        </select>
+                    </div>
+                    <div class="toolbar-group">
+                        <label>Chapter</label>
+                        <select id="console-chapter">
+                            <option value="">All</option>
+                        </select>
+                    </div>
+                    <div class="toolbar-group">
+                        <label>Host</label>
+                        <input type="text" id="console-host" value="127.0.0.1" style="width:160px" />
+                    </div>
+                    <div class="toolbar-group">
+                        <label>Port</label>
+                        <input type="number" id="console-port" value="8080" />
+                    </div>
+                    <div class="toolbar-group">
+                        <label>Max Tokens</label>
+                        <input type="number" id="console-max-tokens" value="16384" />
+                    </div>
+                    <div class="toolbar-group">
+                        <label>Temp</label>
+                        <input type="number" id="console-temp" value="0.88" step="0.05" style="width:70px" />
+                    </div>
+                    <div class="toolbar-group" id="strategy-group" style="display:none">
+                        <label>Strategy</label>
+                        <select id="console-strategy">
+                            <option value="general">General</option>
+                            <option value="weakest">Weakest Element</option>
+                            <option value="dialogue">Dialogue</option>
+                            <option value="sensory">Sensory</option>
+                            <option value="pacing">Pacing</option>
+                            <option value="voice">Voice</option>
+                        </select>
+                    </div>
+                    <div class="toolbar-group" id="polish-score-group" style="display:none">
+                        <label>Min Score</label>
+                        <input type="number" id="console-min-score" value="80" style="width:60px" />
+                    </div>
+                    <div class="toolbar-group" id="evolve-mode-group" style="display:none">
+                        <label>Mode</label>
+                        <select id="console-evolve-mode">
+                            <option value="full">Full</option>
+                            <option value="expand">Expand</option>
+                            <option value="refine">Refine</option>
+                        </select>
+                    </div>
+                    <div class="toolbar-group" id="polish-rounds-group" style="display:none">
+                        <label>Rounds</label>
+                        <input type="number" id="console-max-rounds" value="3" style="width:50px" />
+                    </div>
+                    <div class="toolbar-group" id="threshold-group" style="display:none">
+                        <label>Threshold</label>
+                        <input type="number" id="console-threshold" value="6" style="width:50px"
+                            title="Chapters with >= this many key_events will be split" />
+                    </div>
+                    <div style="flex:1"></div>
+                    <div class="console-status" id="console-status">
+                        <span class="dot"></span>
+                        <span class="label">Ready</span>
+                    </div>
+                    <button class="btn btn-primary" id="console-run-btn" onclick="consoleRun()">▶ Run</button>
+                    <button class="btn btn-danger" id="console-cancel-btn" onclick="consoleCancel()"
+                        style="display:none">■ Cancel</button>
+                </div>
+                <div class="endpoint-note" id="llm-endpoint-note"></div>
+                <div class="console-output" id="console-output">
+                    <span class="line line-dim">Select a command and click Run to start...</span>
+                </div>
+            </div>
+
+            <!-- Chat Tab -->
+            <div id="tab-chat" class="tab-panel">
+                <div class="chat-container">
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="chat-welcome">
+                            <div class="chat-welcome-icon">💬</div>
+                            <h3>Book AI Assistant</h3>
+                            <p>Ask questions about your book, brainstorm ideas, or request config changes.</p>
+                            <div class="chat-suggestions">
+                                <button onclick="chatSend('Who are the main characters?')">Who are the main
+                                    characters?</button>
+                                <button onclick="chatSend('Summarize the plot so far')">Summarize the plot</button>
+                                <button onclick="chatSend('What happens in chapter 1?')">What happens in Ch 1?</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chat-input-area">
+                        <div class="chat-input-row">
+                            <textarea id="chat-input" placeholder="Ask about your book..." rows="1"
+                                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend()}"
+                                oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+                            <button class="chat-send-btn" id="chat-send-btn" onclick="chatSend()">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M22 2L11 13" />
+                                    <path d="M22 2L15 22L11 13L2 9L22 2Z" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="chat-settings">
+                            <label>Host <input type="text" id="chat-host" value="127.0.0.1" /></label>
+                            <label>Port <input type="number" id="chat-port" value="8080" /></label>
+                            <label>Temp <input type="number" id="chat-temp" value="0.7" step="0.05" /></label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- ─── Toasts ──────────────────────────────────────────────── -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Genesis Modal -->
+    <div class="modal-overlay" id="genesis-modal"
+        style="display:none; position:fixed; inset:0; z-index:1000; align-items:center; justify-content:center; background:rgba(0,0,0,0.7); backdrop-filter:blur(4px);">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>✨ Create New Book</h2>
+                <button class="btn btn-sm" onclick="hideGenesisModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Creative Prompt</label>
+                    <textarea id="genesis-prompt" rows="4"
+                        placeholder="A cyberpunk heist in Neo-Tokyo, 2087..."></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Host</label><input type="text" id="genesis-host" value="127.0.0.1" />
+                    </div>
+                    <div class="form-group"><label>Port</label><input type="number" id="genesis-port" value="8080" />
+                    </div>
+                </div>
+                <div id="genesis-output" class="console-output"
+                    style="display:none; min-height:200px; max-height:300px; margin-top:1rem;"></div>
+            </div>
+            <div class="modal-footer">
+                <div class="console-status" id="genesis-status" style="display:none">
+                    <span class="dot"></span>
+                    <span class="label">Generating...</span>
+                </div>
+                <button class="btn" onclick="hideGenesisModal()">Cancel</button>
+                <button class="btn btn-primary" id="genesis-run-btn" onclick="runGenesis()">✨ Generate</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ─── State ─────────────────────────────────────────────────────
+        let currentBook = null;
+        let currentConfig = null;
+        let configPath = null;
+        let chaptersData = [];
+
+        // ─── API helpers ───────────────────────────────────────────────
+        async function api(path, opts = {}) {
+            const res = await fetch(`/api${path}`, {
+                headers: { 'Content-Type': 'application/json' },
+                ...opts,
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({ detail: res.statusText }));
+                throw new Error(err.detail || 'API error');
+            }
+            return res.json();
+        }
+
+        function toast(msg, type = 'success') {
+            const el = document.createElement('div');
+            el.className = `toast toast-${type}`;
+            el.textContent = msg;
+            document.getElementById('toast-container').appendChild(el);
+            setTimeout(() => el.remove(), 3500);
+        }
+
+        // ─── Library ───────────────────────────────────────────────────
+        async function loadLibrary() {
+            const grid = document.getElementById('book-grid');
+            try {
+                const data = await api('/books');
+                if (!data.books.length) {
+                    grid.innerHTML = `<div class="empty-state"><div class="icon">📚</div><p>No books found in library</p></div>`;
+                    return;
+                }
+                grid.innerHTML = data.books.map(b => `
+            <div class="book-card" onclick="openBook('${b.name}')">
+                <div class="title">${esc(b.title)}</div>
+                <div class="genre">${esc(b.genre || 'Fiction')}</div>
+                <div class="stats">
+                    <span class="stat">📑 ${b.chapter_count} chapters</span>
+                    <span class="stat">📝 ${formatWords(b.total_words)}</span>
+                    ${b.has_config ? '<span class="stat">⚙️ Config</span>' : ''}
+                </div>
+            </div>
+        `).join('');
+            } catch (e) {
+                grid.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>${esc(e.message)}</p></div>`;
+            }
+        }
+
+        function showLibrary() {
+            currentBook = null;
+            document.getElementById('library-view').classList.add('active');
+            document.getElementById('book-view').classList.remove('active');
+            document.getElementById('book-view').style.display = 'none';
+            document.getElementById('library-view').style.display = 'block';
+            document.getElementById('breadcrumb').innerHTML = '<a href="#" onclick="showLibrary()">Library</a>';
+            loadLibrary();
+        }
+
+        // ─── Open Book ─────────────────────────────────────────────────
+        async function openBook(name) {
+            currentBook = name;
+            document.getElementById('library-view').style.display = 'none';
+            document.getElementById('book-view').style.display = 'block';
+            document.getElementById('book-view').classList.add('active');
+
+            // Load config
+            try {
+                const configData = await api(`/books/${name}/config`);
+                currentConfig = configData.config;
+                configPath = configData.config_path;
+            } catch {
+                currentConfig = null;
+                configPath = null;
+            }
+
+            const title = currentConfig?.title || name.replace(/_/g, ' ');
+            document.getElementById('breadcrumb').innerHTML = `
+        <a href="#" onclick="showLibrary()">Library</a>
+        <span class="sep">›</span>
+        <span class="current">${esc(title)}</span>
+    `;
+
+            // Load chapters
+            await loadChapters();
+
+            // Build config editor
+            if (currentConfig) buildConfigEditor();
+
+            // Reset to chapters tab
+            switchTab('chapters');
+
+            // Reset chat for new book context
+            if (typeof chatReset === 'function') chatReset();
+        }
+
+        // ─── Chapter config helper ─────────────────────────────────────
+        function getChapterConfigs() {
+            let ch = currentConfig?.chapters || [];
+            // Unwrap double-nesting: chapters: { chapters: [...] }
+            if (ch && !Array.isArray(ch) && ch.chapters) {
+                ch = ch.chapters;
+            }
+            return Array.isArray(ch) ? ch : Object.values(ch);
+        }
+
+        // ─── Chapters ──────────────────────────────────────────────────
+        async function loadChapters() {
+            const list = document.getElementById('chapter-list');
+            try {
+                const data = await api(`/books/${currentBook}/chapters`);
+                chaptersData = data.chapters;
+                if (!chaptersData.length) {
+                    list.innerHTML = '<div class="empty-state"><div class="icon">📑</div><p>No chapters yet</p></div>';
+                    return;
+                }
+
+                let chapterConfigs = getChapterConfigs();
+
+                list.innerHTML = chaptersData.map(c => {
+                    const cfg = chapterConfigs.find(cc => cc.number === c.number)
+                        || chapterConfigs[c.number - 1];
+                    const title = cfg?.title || `Chapter ${c.number}`;
+                    const pov = cfg?.pov_character || '';
+                    return `
+                <div class="chapter-row" onclick="readChapter(${c.number})">
+                    <div class="chapter-num ${c.status}">${c.number}</div>
+                    <div class="chapter-info">
+                        <div class="ch-title">${esc(title)}</div>
+                        <div class="ch-meta">
+                            <span>${formatWords(c.word_count)}</span>
+                            ${pov ? `<span>POV: ${esc(pov)}</span>` : ''}
+                            ${c.versions > 0 ? `<span>${c.versions} version${c.versions > 1 ? 's' : ''}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="chapter-actions">
+                        <span class="badge badge-${c.status}">${c.status}</span>
+                        ${c.has_review ? '<button class="btn btn-sm" onclick="event.stopPropagation(); readChapterWithReview(' + c.number + ')" title="View review">📝</button>' : ''}
+                        <button class="btn btn-sm" onclick="event.stopPropagation(); runForChapter('compose', ${c.number})" title="Generate">✍</button>
+                        <button class="btn btn-sm" onclick="event.stopPropagation(); runForChapter('review', ${c.number})" title="Review">🔍</button>
+                        <button class="btn btn-sm" onclick="event.stopPropagation(); runForChapter('revise', ${c.number})" title="Revise">🔄</button>
+                    </div>
+                </div>
+            `;
+                }).join('');
+            } catch (e) {
+                list.innerHTML = `<div class="empty-state"><p>Error: ${esc(e.message)}</p></div>`;
+            }
+        }
+
+        // ─── Reader ────────────────────────────────────────────────────
+        async function readChapter(num) {
+            switchTab('reader');
+            const panel = document.getElementById('reader-panel');
+            panel.className = 'reader-panel active chapter-only';
+            panel.innerHTML = '<div class="loading"><div class="spinner"></div> Loading...</div>';
+
+            try {
+                const data = await api(`/books/${currentBook}/chapters/${num}`);
+                num = parseInt(num);
+                const cfgArr = getChapterConfigs();
+                const cfg = cfgArr.find(c => parseInt(c.number) === num) || cfgArr[num - 1];
+                const title = cfg?.title || `Chapter ${num}`;
+                const html = markdownToHtml(data.content);
+
+                panel.innerHTML = `
+            <div class="reader-column">
+                <div class="reader-column-header">
+                    <span>Chapter ${num}: ${esc(title)}</span>
+                    <span style="color: var(--text-dim); font-weight: 400">${formatWords(data.word_count)}</span>
+                </div>
+                <div class="reader-content">${html}</div>
+            </div>
+        `;
+            } catch (e) {
+                panel.innerHTML = `<div class="empty-state"><p>${esc(e.message)}</p></div>`;
+            }
+        }
+
+        async function readChapterWithReview(num) {
+            switchTab('reader');
+            const panel = document.getElementById('reader-panel');
+            panel.className = 'reader-panel active';
+            panel.innerHTML = '<div class="loading"><div class="spinner"></div> Loading...</div>';
+
+            try {
+                const [chData, revData] = await Promise.all([
+                    api(`/books/${currentBook}/chapters/${num}`),
+                    api(`/books/${currentBook}/reviews/${num}`).catch(() => ({ content: 'No review available.' })),
+                ]);
+                const cfgArr2 = getChapterConfigs();
+                const cfg = cfgArr2.find(c => parseInt(c.number) === parseInt(num)) || cfgArr2[parseInt(num) - 1];
+                const title = cfg?.title || `Chapter ${num}`;
+
+                panel.innerHTML = `
+            <div class="reader-column">
+                <div class="reader-column-header">
+                    <span>📖 Chapter ${num}: ${esc(title)}</span>
+                    <span style="color: var(--text-dim); font-weight: 400">${formatWords(chData.word_count)}</span>
+                </div>
+                <div class="reader-content">${markdownToHtml(chData.content)}</div>
+            </div>
+            <div class="reader-column">
+                <div class="reader-column-header">
+                    <span>📝 Review</span>
+                    <button class="btn btn-sm" onclick="editReview(${num})">Edit</button>
+                </div>
+                <div class="review-content">${markdownToHtml(revData.content)}</div>
+            </div>
+        `;
+            } catch (e) {
+                panel.innerHTML = `<div class="empty-state"><p>${esc(e.message)}</p></div>`;
+            }
+        }
+
+        async function editReview(num) {
+            try {
+                const data = await api(`/books/${currentBook}/reviews/${num}`).catch(() => ({ content: '' }));
+                const panel = document.querySelector('#reader-panel .reader-column:last-child');
+                const header = panel.querySelector('.reader-column-header');
+                const content = panel.querySelector('.review-content');
+
+                header.innerHTML = `
+            <span>📝 Review (editing)</span>
+            <div>
+                <button class="btn btn-sm btn-primary" onclick="saveReview(${num})">Save</button>
+                <button class="btn btn-sm" onclick="readChapterWithReview(${num})">Cancel</button>
+            </div>
+        `;
+                content.innerHTML = `<textarea id="review-editor" style="width:100%; height:100%; min-height:400px; background:var(--bg-input); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text-primary); font-family:var(--font-body); font-size:0.9rem; padding:1rem; resize:none;">${esc(data.content)}</textarea>`;
+            } catch (e) {
+                toast(e.message, 'error');
+            }
+        }
+
+        async function saveReview(num) {
+            const content = document.getElementById('review-editor').value;
+            try {
+                await api(`/books/${currentBook}/reviews/${num}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ content }),
+                });
+                toast('Review saved');
+                readChapterWithReview(num);
+            } catch (e) {
+                toast(e.message, 'error');
+            }
+        }
+
+        // ─── Config Editor ─────────────────────────────────────────────
+        const CONFIG_SECTIONS = [
+            { id: 'basics', label: '📖 Basics', icon: '' },
+            { id: 'setting', label: '🌍 Setting', icon: '' },
+            { id: 'characters', label: '👤 Characters', icon: '' },
+            { id: 'chapters', label: '📑 Chapters', icon: '' },
+            { id: 'events', label: '⚡ Events', icon: '' },
+            { id: 'meta', label: '🔧 Meta', icon: '' },
+        ];
+
+        function buildConfigEditor() {
+            if (!currentConfig) return;
+            const nav = document.getElementById('config-nav');
+            const panel = document.getElementById('config-panel');
+
+            nav.innerHTML = CONFIG_SECTIONS.map((s, i) => `
+        <button class="config-nav-item ${i === 0 ? 'active' : ''}" onclick="showConfigSection('${s.id}', this)">${s.label}</button>
+    `).join('');
+
+            panel.innerHTML = CONFIG_SECTIONS.map((s, i) => `
+        <div class="config-section ${i === 0 ? 'active' : ''}" id="config-${s.id}"></div>
+    `).join('') + `
+        <div style="margin-top: 1.5rem; display:flex; gap:0.75rem;">
+            <button class="btn btn-primary" onclick="saveConfig()">💾 Save Config</button>
+        </div>
+    `;
+
+            renderBasics();
+            renderSetting();
+            renderCharacters();
+            renderChapters();
+            renderEvents();
+            renderMeta();
+        }
+
+        function showConfigSection(id, btn) {
+            document.querySelectorAll('.config-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.config-nav-item').forEach(b => b.classList.remove('active'));
+            document.getElementById(`config-${id}`).classList.add('active');
+            btn.classList.add('active');
+        }
+
+        function renderBasics() {
+            const c = currentConfig;
+            document.getElementById('config-basics').innerHTML = `
+        <h3>Story Basics</h3>
+        <div class="form-group">
+            <label>Title</label>
+            <input type="text" id="cfg-title" value="${esc(c.title || '')}" />
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Genre</label>
+                <input type="text" id="cfg-genre" value="${esc(c.genre || '')}" />
+            </div>
+            <div class="form-group">
+                <label>POV</label>
+                <input type="text" id="cfg-pov" value="${esc(c.pov || 'third-person limited')}" />
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Tone</label>
+            <input type="text" id="cfg-tone" value="${esc(c.tone || '')}" />
+        </div>
+        <div class="form-group">
+            <label>Themes</label>
+            <textarea id="cfg-themes" rows="3">${esc((c.themes || []).join('\n'))}</textarea>
+        </div>
+    `;
+        }
+
+        function renderSetting() {
+            const s = currentConfig.setting || {};
+            const locs = (s.locations || []).map((loc, i) => `
+        <div class="entity-card">
+            <div class="entity-card-header"><h4>${esc(loc.name || 'Location ' + (i + 1))}</h4></div>
+            <div class="form-group"><label>Name</label><input type="text" data-loc="${i}" data-field="name" value="${esc(loc.name || '')}" /></div>
+            <div class="form-group"><label>Description</label><textarea data-loc="${i}" data-field="description" rows="2">${esc(loc.description || '')}</textarea></div>
+            <div class="form-row">
+                <div class="form-group"><label>Mood</label><input type="text" data-loc="${i}" data-field="mood" value="${esc(loc.mood || '')}" /></div>
+                <div class="form-group"><label>Sensory</label><input type="text" data-loc="${i}" data-field="sensory" value="${esc(loc.sensory || '')}" /></div>
+            </div>
+        </div>
+    `).join('');
+
+            document.getElementById('config-setting').innerHTML = `
+        <h3>Setting</h3>
+        <div class="form-group">
+            <label>Time Period</label>
+            <input type="text" id="cfg-time-period" value="${esc(s.time_period || '')}" />
+        </div>
+        <div class="form-group">
+            <label>World Details</label>
+            <textarea id="cfg-world-details" rows="3">${esc(s.world_details || '')}</textarea>
+        </div>
+        <h3 style="margin-top: 1.5rem">Locations</h3>
+        ${locs}
+    `;
+        }
+
+        function renderCharacters() {
+            const chars = currentConfig.characters || [];
+            const html = chars.map((ch, i) => `
+        <div class="entity-card">
+            <div class="entity-card-header"><h4>${esc(ch.name || 'Character ' + (i + 1))}</h4></div>
+            <div class="form-row">
+                <div class="form-group"><label>Name</label><input type="text" data-char="${i}" data-field="name" value="${esc(ch.name || '')}" /></div>
+                <div class="form-group"><label>Role</label><input type="text" data-char="${i}" data-field="role" value="${esc(ch.role || '')}" /></div>
+            </div>
+            <div class="form-group"><label>Physical</label><textarea data-char="${i}" data-field="physical" rows="2">${esc(ch.physical || '')}</textarea></div>
+            <div class="form-group"><label>Psychological</label><textarea data-char="${i}" data-field="psychological" rows="2">${esc(ch.psychological || ch.personality || '')}</textarea></div>
+            <div class="form-group"><label>Backstory</label><textarea data-char="${i}" data-field="backstory" rows="2">${esc(ch.backstory || '')}</textarea></div>
+            <div class="form-group"><label>Voice</label><textarea data-char="${i}" data-field="voice" rows="2">${esc(ch.voice || '')}</textarea></div>
+            <div class="form-group"><label>Arc</label><textarea data-char="${i}" data-field="arc" rows="2">${esc(ch.arc || '')}</textarea></div>
+        </div>
+    `).join('');
+
+            document.getElementById('config-characters').innerHTML = `<h3>Characters</h3>${html}`;
+        }
+
+        function renderChapters() {
+            const chs = getChapterConfigs();
+            const html = chs.map((ch, i) => {
+                const events = Array.isArray(ch.key_events) ? ch.key_events.join('\n') : (ch.key_events || '');
+                return `
+        <div class="entity-card">
+            <div class="entity-card-header"><h4>Chapter ${ch.number || i + 1}: ${esc(ch.title || '')}</h4></div>
+            <div class="form-row">
+                <div class="form-group"><label>Title</label><input type="text" data-chap="${i}" data-field="title" value="${esc(ch.title || '')}" /></div>
+                <div class="form-group"><label>POV Character</label><input type="text" data-chap="${i}" data-field="pov_character" value="${esc(ch.pov_character || '')}" /></div>
+            </div>
+            <div class="form-group">
+                <label>Synopsis <button class="btn-gen-synopsis" data-chap-idx="${i}" title="Generate synopsis from key events">✨ Generate</button></label>
+                <textarea data-chap="${i}" data-field="synopsis" rows="3" id="synopsis-${i}">${esc(ch.synopsis || ch.summary || '')}</textarea>
+            </div>
+            <div class="form-group">
+                <label>Key Events <span style="font-size:0.8em;opacity:0.6">(one per line)</span></label>
+                <textarea data-chap="${i}" data-field="key_events" rows="4" id="events-${i}">${esc(events)}</textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Emotional Beat</label><input type="text" data-chap="${i}" data-field="emotional_beat" value="${esc(ch.emotional_beat || '')}" /></div>
+                <div class="form-group"><label>Location</label><input type="text" data-chap="${i}" data-field="location" value="${esc(ch.location || '')}" /></div>
+            </div>
+        </div>`;
+            }).join('');
+
+            document.getElementById('config-chapters').innerHTML = `<h3>Chapters</h3>${html}`;
+
+            // Attach generate synopsis handlers
+            document.querySelectorAll('.btn-gen-synopsis').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    generateSynopsis(parseInt(btn.dataset.chapIdx));
+                });
+            });
+        }
+
+        async function generateSynopsis(idx) {
+            const chs = getChapterConfigs();
+            const ch = chs[idx];
+            if (!ch) return;
+
+            const btn = document.querySelector(`.btn-gen-synopsis[data-chap-idx="${idx}"]`);
+            const synopsisEl = document.getElementById(`synopsis-${idx}`);
+            const eventsEl = document.getElementById(`events-${idx}`);
+            if (!synopsisEl || !eventsEl) return;
+
+            // Parse key_events from textarea
+            const eventsText = eventsEl.value.trim();
+            const keyEvents = eventsText ? eventsText.split('\n').map(l => l.trim()).filter(Boolean) : [];
+            if (keyEvents.length === 0) {
+                toast('Add some key events first', 'error');
+                return;
+            }
+
+            // Get other fields from the form
+            const title = document.querySelector(`[data-chap="${idx}"][data-field="title"]`)?.value || ch.title || '';
+            const pov = document.querySelector(`[data-chap="${idx}"][data-field="pov_character"]`)?.value || ch.pov_character || '';
+            const beat = document.querySelector(`[data-chap="${idx}"][data-field="emotional_beat"]`)?.value || ch.emotional_beat || '';
+            const loc = document.querySelector(`[data-chap="${idx}"][data-field="location"]`)?.value || ch.location || '';
+
+            btn.textContent = '⏳ Generating...';
+            btn.disabled = true;
+            synopsisEl.value = '';
+
+            try {
+                const resp = await fetch(`/api/books/${currentBook}/generate-synopsis`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chapter_number: ch.number || idx + 1,
+                        title, key_events: keyEvents,
+                        pov_character: pov, emotional_beat: beat, location: loc,
+                    }),
+                });
+
+                const reader = resp.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+
+                    for (const line of lines) {
+                        if (!line.startsWith('data: ')) continue;
+                        try {
+                            const evt = JSON.parse(line.slice(6));
+                            if (evt.type === 'token') {
+                                synopsisEl.value += evt.content;
+                            } else if (evt.type === 'error') {
+                                toast(evt.content, 'error');
+                            }
+                        } catch { }
+                    }
+                }
+                toast('Synopsis generated');
+            } catch (e) {
+                toast(e.message, 'error');
+            } finally {
+                btn.textContent = '✨ Generate';
+                btn.disabled = false;
+            }
+        }
+
+        function renderEvents() {
+            const evts = currentConfig.events || [];
+            const html = evts.map((ev, i) => `
+        <div class="entity-card">
+            <div class="entity-card-header"><h4>Chapter ${ev.chapter || '?'} Event</h4></div>
+            <div class="form-group"><label>Summary</label><textarea data-evt="${i}" data-field="summary" rows="3">${esc(ev.summary || '')}</textarea></div>
+            <div class="form-row">
+                <div class="form-group"><label>Emotional Beat</label><input type="text" data-evt="${i}" data-field="emotional_beat" value="${esc(ev.emotional_beat || '')}" /></div>
+                <div class="form-group"><label>Consequences</label><input type="text" data-evt="${i}" data-field="consequences" value="${esc(ev.consequences || '')}" /></div>
+            </div>
+        </div>
+    `).join('');
+
+            document.getElementById('config-events').innerHTML = `<h3>Events</h3>${html}`;
+        }
+
+        function renderMeta() {
+            const m = currentConfig.meta || {};
+            document.getElementById('config-meta').innerHTML = `
+        <h3>Meta</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Target Chapter Count</label>
+                <input type="number" id="cfg-chapter-count" value="${m.target_chapter_count || 12}" />
+            </div>
+            <div class="form-group">
+                <label>Target Words per Chapter</label>
+                <input type="text" id="cfg-words-per-chapter" value="${m.target_words_per_chapter || 2500}" />
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Style Notes</label>
+            <textarea id="cfg-style-notes" rows="5">${esc(m.style_notes || '')}</textarea>
+        </div>
+    `;
+        }
+
+        async function saveConfig() {
+            if (!currentConfig || !currentBook) return;
+
+            // Gather basics
+            currentConfig.title = document.getElementById('cfg-title')?.value || '';
+            currentConfig.genre = document.getElementById('cfg-genre')?.value || '';
+            currentConfig.pov = document.getElementById('cfg-pov')?.value || '';
+            currentConfig.tone = document.getElementById('cfg-tone')?.value || '';
+            const themesRaw = document.getElementById('cfg-themes')?.value || '';
+            currentConfig.themes = themesRaw.split('\n').map(t => t.trim()).filter(Boolean);
+
+            // Setting
+            if (!currentConfig.setting) currentConfig.setting = {};
+            currentConfig.setting.time_period = document.getElementById('cfg-time-period')?.value || '';
+            currentConfig.setting.world_details = document.getElementById('cfg-world-details')?.value || '';
+
+            // Locations
+            document.querySelectorAll('[data-loc]').forEach(el => {
+                const idx = parseInt(el.dataset.loc);
+                const field = el.dataset.field;
+                if (!currentConfig.setting.locations) currentConfig.setting.locations = [];
+                if (!currentConfig.setting.locations[idx]) currentConfig.setting.locations[idx] = {};
+                currentConfig.setting.locations[idx][field] = el.value;
+            });
+
+            // Characters
+            document.querySelectorAll('[data-char]').forEach(el => {
+                const idx = parseInt(el.dataset.char);
+                const field = el.dataset.field;
+                if (!currentConfig.characters[idx]) currentConfig.characters[idx] = {};
+                currentConfig.characters[idx][field] = el.value;
+            });
+
+            // Chapters
+            document.querySelectorAll('[data-chap]').forEach(el => {
+                const idx = parseInt(el.dataset.chap);
+                const field = el.dataset.field;
+                if (!currentConfig.chapters[idx]) currentConfig.chapters[idx] = {};
+                if (field === 'key_events') {
+                    // Split textarea into array of events, converting straight quotes to curly
+                    const raw = toCurlyQuotes(el.value);
+                    currentConfig.chapters[idx][field] = raw.split('\n').map(l => l.trim()).filter(Boolean);
+                } else {
+                    currentConfig.chapters[idx][field] = el.value;
+                }
+            });
+
+            // Events
+            document.querySelectorAll('[data-evt]').forEach(el => {
+                const idx = parseInt(el.dataset.evt);
+                const field = el.dataset.field;
+                if (!currentConfig.events[idx]) currentConfig.events[idx] = {};
+                currentConfig.events[idx][field] = el.value;
+            });
+
+            // Meta
+            if (!currentConfig.meta) currentConfig.meta = {};
+            currentConfig.meta.target_chapter_count = parseInt(document.getElementById('cfg-chapter-count')?.value || '12');
+            const wpc = document.getElementById('cfg-words-per-chapter')?.value || '2500';
+            currentConfig.meta.target_words_per_chapter = isNaN(wpc) ? wpc : parseInt(wpc);
+            currentConfig.meta.style_notes = document.getElementById('cfg-style-notes')?.value || '';
+
+            try {
+                await api(`/books/${currentBook}/config`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ config: currentConfig }),
+                });
+                toast('Config saved to YAML');
+            } catch (e) {
+                toast(e.message, 'error');
+            }
+        }
+
+        // ─── Tabs ──────────────────────────────────────────────────────
+        function switchTab(id) {
+            // Pause any playing videos when leaving the visuals tab (prevents audio bleed)
+            document.querySelectorAll('video').forEach(v => {
+                if (!v.paused) v.pause();
+            });
+
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === `tab-${id}`));
+            if (id === 'console') populateChapterPicker();
+        }
+
+        // ─── Utilities ─────────────────────────────────────────────────
+        function esc(str) {
+            if (str == null) return '';
+            const d = document.createElement('div');
+            d.textContent = String(str);
+            return d.innerHTML;
+        }
+
+        function toCurlyQuotes(str) {
+            if (!str) return str;
+            // Convert straight double quotes to curly quotes (opening before non-space, closing otherwise)
+            // Using Unicode escapes for maximum compatibility / to avoid encoding issues in the HTML
+            return str
+                .replace(/"(?=\S)/g, '\u201c')
+                .replace(/"(?=\s|$|[.,;:!?…])/g, '\u201d')
+                .replace(/"/g, '\u201d');
+        }
+
+        function formatWords(n) {
+            if (n >= 1000) return (n / 1000).toFixed(1) + 'k words';
+            return n + ' words';
+        }
+
+        function markdownToHtml(md) {
+            if (!md) return '<p style="color: var(--text-dim)">Empty</p>';
+            // Simple markdown: paragraphs, bold, italic, headers
+            let html = md
+                .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+                .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+                .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                .replace(/---/g, '<hr>');
+
+            // Paragraphs
+            html = html.split('\n\n').map(p => {
+                p = p.trim();
+                if (!p) return '';
+                if (p.startsWith('<h') || p.startsWith('<hr')) return p;
+                return `<p>${p.replace(/\n/g, ' ')}</p>`;
+            }).join('\n');
+
+            return html;
+        }
+
+        function onCmdChange() {
+            const cmd = document.getElementById('console-cmd').value;
+            const showStrategy = cmd === 'revise' || cmd === 'polish';
+            const showPolish = cmd === 'polish';
+            const showEvolve = cmd === 'evolve';
+            const showRounds = cmd === 'polish' || cmd === 'evolve';
+            const showThreshold = cmd === 'restructure';
+            document.getElementById('strategy-group').style.display = showStrategy ? '' : 'none';
+            document.getElementById('polish-score-group').style.display = showPolish ? '' : 'none';
+            document.getElementById('polish-rounds-group').style.display = showRounds ? '' : 'none';
+            document.getElementById('evolve-mode-group').style.display = showEvolve ? '' : 'none';
+            document.getElementById('threshold-group').style.display = showThreshold ? '' : 'none';
+        }
+
+        // ─── Console ───────────────────────────────────────────────────
+        let consoleAbort = null;
+        let consoleRunning = false;
+
+        function populateChapterPicker() {
+            const sel = document.getElementById('console-chapter');
+            sel.innerHTML = '<option value="">All</option>';
+
+            const diskChapters = chaptersData || [];
+            const configChapters = getChapterConfigs();
+
+            // Build lookup of chapters that actually exist on disk
+            const diskMap = {};
+            diskChapters.forEach(ch => {
+                diskMap[ch.number] = ch;
+            });
+
+            // Collect all chapter numbers from both the on-disk scan and the YAML config
+            const allNums = new Set();
+            diskChapters.forEach(ch => allNums.add(ch.number));
+            configChapters.forEach(ch => {
+                const num = parseInt(ch.number);
+                if (!isNaN(num)) allNums.add(num);
+            });
+
+            // Render in order, marking chapters that have no file yet
+            Array.from(allNums).sort((a, b) => a - b).forEach(num => {
+                const diskCh = diskMap[num];
+                const cfg = configChapters.find(c => parseInt(c.number) === num)
+                         || configChapters[num - 1];
+                const title = cfg?.title || `Chapter ${num}`;
+
+                let label = `${num}. ${esc(title)}`;
+                if (!diskCh) {
+                    label += ' (not generated yet)';
+                }
+
+                sel.innerHTML += `<option value="${num}">${label}</option>`;
+            });
+        }
+
+        async function consoleRun() {
+            if (!currentBook || consoleRunning) return;
+
+            const cmd = document.getElementById('console-cmd').value;
+            const chVal = document.getElementById('console-chapter').value;
+            const host = document.getElementById('console-host').value;
+            const port = parseInt(document.getElementById('console-port').value);
+            const maxTokens = parseInt(document.getElementById('console-max-tokens').value);
+            const temp = parseFloat(document.getElementById('console-temp').value);
+
+            const body = {
+                command: cmd,
+                chapter: chVal ? parseInt(chVal) : null,
+                host, port,
+                max_tokens: maxTokens,
+                temperature: temp,
+                strategy: document.getElementById('console-strategy').value,
+                min_score: parseInt(document.getElementById('console-min-score').value) || 80,
+                max_rounds: parseInt(document.getElementById('console-max-rounds').value) || 3,
+                evolve_mode: document.getElementById('console-evolve-mode').value,
+                threshold: parseInt(document.getElementById('console-threshold').value) || 6,
+            };
+
+            const output = document.getElementById('console-output');
+            output.innerHTML = '';
+            setConsoleState(true);
+
+            const chLabel = chVal ? ` chapter ${chVal}` : '';
+            appendLine(`▶ Running: ${cmd}${chLabel} on ${currentBook}`, 'info');
+            appendLine(`  host=${host}  port=${port}  max_tokens=${maxTokens}  temp=${temp}`, 'dim');
+            appendLine('', 'dim');
+
+            const controller = new AbortController();
+            consoleAbort = controller;
+
+            try {
+                const res = await fetch(`/api/books/${currentBook}/run`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                    signal: controller.signal,
+                });
+
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const text = line.slice(6);
+
+                            if (text.startsWith('[EXIT:')) {
+                                const code = text.match(/\[EXIT:(\d+)\]/)?.[1];
+                                if (code === '0') {
+                                    appendLine('\n✅ Completed successfully', 'success');
+                                } else {
+                                    appendLine(`\n⚠ Exited with code ${code}`, 'error');
+                                }
+                                continue;
+                            }
+                            if (text === '[CANCELLED]') {
+                                appendLine('\n■ Cancelled', 'warning');
+                                continue;
+                            }
+
+                            let cls = '';
+                            if (text.includes('✅') || text.includes('✓')) cls = 'success';
+                            else if (text.includes('⚠') || text.includes('WARNING')) cls = 'warning';
+                            else if (text.includes('ERROR') || text.includes('❌')) cls = 'error';
+                            else if (text.includes('📖') || text.includes('✍') || text.includes('📝')) cls = 'info';
+                            else if (text.startsWith('   ')) cls = 'dim';
+
+                            appendLine(text, cls);
+                        }
+                    }
+                }
+            } catch (e) {
+                if (e.name !== 'AbortError') {
+                    appendLine(`\n❌ Error: ${e.message}`, 'error');
+                }
+            } finally {
+                setConsoleState(false);
+                await loadChapters();
+            }
+        }
+
+        async function consoleCancel() {
+            if (consoleAbort) {
+                consoleAbort.abort();
+                consoleAbort = null;
+            }
+            if (currentBook) {
+                try {
+                    await fetch(`/api/books/${currentBook}/cancel`, { method: 'POST' });
+                } catch { }
+            }
+        }
+
+        function runForChapter(cmd, chapter) {
+            document.getElementById('console-cmd').value = cmd;
+            populateChapterPicker();
+            const chapterSel = document.getElementById('console-chapter');
+            for (const opt of chapterSel.options) {
+                if (opt.value === String(chapter)) {
+                    opt.selected = true;
+                    break;
+                }
+            }
+            switchTab('console');
+            setTimeout(() => consoleRun(), 100);
+        }
+
+        function setConsoleState(running) {
+            consoleRunning = running;
+            const status = document.getElementById('console-status');
+            const runBtn = document.getElementById('console-run-btn');
+            const cancelBtn = document.getElementById('console-cancel-btn');
+
+            if (running) {
+                status.className = 'console-status running';
+                status.querySelector('.label').textContent = 'Running...';
+                runBtn.style.display = 'none';
+                cancelBtn.style.display = '';
+            } else {
+                status.className = 'console-status';
+                status.querySelector('.label').textContent = 'Ready';
+                runBtn.style.display = '';
+                cancelBtn.style.display = 'none';
+            }
+        }
+
+        function appendLine(text, cls) {
+            const output = document.getElementById('console-output');
+            const span = document.createElement('span');
+            span.className = `line${cls ? ` line-${cls}` : ''}`;
+            span.textContent = text;
+            output.appendChild(span);
+            output.appendChild(document.createTextNode('\n'));
+            output.scrollTop = output.scrollHeight;
+        }
+
+        // ─── Genesis ───────────────────────────────────────────────────
+        function showGenesisModal() {
+            const modal = document.getElementById('genesis-modal');
+            modal.style.display = 'flex';
+            document.getElementById('genesis-prompt').value = '';
+            document.getElementById('genesis-output').style.display = 'none';
+            document.getElementById('genesis-output').innerHTML = '';
+            document.getElementById('genesis-status').style.display = 'none';
+            document.getElementById('genesis-run-btn').style.display = '';
+            document.getElementById('genesis-prompt').focus();
+        }
+
+        function hideGenesisModal() {
+            document.getElementById('genesis-modal').style.display = 'none';
+        }
+
+        async function runGenesis() {
+            const prompt = document.getElementById('genesis-prompt').value.trim();
+            if (!prompt) { toast('Enter a creative prompt', 'error'); return; }
+
+            const host = document.getElementById('genesis-host').value;
+            const port = parseInt(document.getElementById('genesis-port').value);
+
+            const output = document.getElementById('genesis-output');
+            output.style.display = 'block';
+            output.innerHTML = '';
+            document.getElementById('genesis-status').style.display = 'flex';
+            document.getElementById('genesis-status').className = 'console-status running';
+            document.getElementById('genesis-run-btn').style.display = 'none';
+
+            const genesisAppend = (text, cls) => {
+                const span = document.createElement('span');
+                span.className = `line${cls ? ` line-${cls}` : ''}`;
+                span.textContent = text;
+                output.appendChild(span);
+                output.appendChild(document.createTextNode('\n'));
+                output.scrollTop = output.scrollHeight;
+            };
+
+            genesisAppend(`✨ Generating book from: "${prompt}"`, 'info');
+            genesisAppend(`  host=${host}  port=${port}`, 'dim');
+            genesisAppend('', 'dim');
+
+            let newBookName = null;
+
+            try {
+                const res = await fetch('/api/genesis', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt, host, port }),
+                });
+
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const text = line.slice(6);
+
+                            const bookMatch = text.match(/\[BOOK:(.+?)\]/);
+                            if (bookMatch) {
+                                newBookName = bookMatch[1];
+                                continue;
+                            }
+                            if (text.startsWith('[EXIT:')) {
+                                const code = text.match(/\[EXIT:(\d+)\]/)?.[1];
+                                if (code === '0') {
+                                    genesisAppend('\n✅ Genesis complete!', 'success');
+                                } else {
+                                    genesisAppend(`\n⚠ Exited with code ${code}`, 'error');
+                                }
+                                continue;
+                            }
+
+                            let cls = '';
+                            if (text.includes('✅') || text.includes('✓')) cls = 'success';
+                            else if (text.includes('⚠')) cls = 'warning';
+                            else if (text.includes('ERROR') || text.includes('❌')) cls = 'error';
+                            else if (text.startsWith('   ')) cls = 'dim';
+
+                            genesisAppend(text, cls);
+                        }
+                    }
+                }
+            } catch (e) {
+                genesisAppend(`\n❌ Error: ${e.message}`, 'error');
+            } finally {
+                document.getElementById('genesis-status').style.display = 'none';
+                document.getElementById('genesis-run-btn').style.display = '';
+            }
+
+            if (newBookName) {
+                toast(`Book "${newBookName}" created!`);
+                hideGenesisModal();
+                await loadLibrary();
+                openBook(newBookName);
+            }
+        }
+
+        // ─── Chat ───────────────────────────────────────────────────────
+        let chatHistory = [];   // { role, content } per book session
+        let chatAbort = null;
+        let chatStreaming = false;
+        let pendingProposal = null;  // staged config proposal
+
+        function chatReset() {
+            chatHistory = [];
+            pendingProposal = null;
+            const el = document.getElementById('chat-messages');
+            el.innerHTML = `
+                <div class="chat-welcome">
+                    <div class="chat-welcome-icon">💬</div>
+                    <h3>Book AI Assistant</h3>
+                    <p>Ask questions about your book, brainstorm ideas, or request config changes.</p>
+                    <div class="chat-suggestions">
+                        <button onclick="chatSend('Who are the main characters?')">Who are the main characters?</button>
+                        <button onclick="chatSend('Summarize the plot so far')">Summarize the plot</button>
+                        <button onclick="chatSend('What happens in chapter 1?')">What happens in Ch 1?</button>
+                    </div>
+                </div>`;
+        }
+
+        function chatAppendMessage(role, content, extra) {
+            const el = document.getElementById('chat-messages');
+            // Remove welcome on first message
+            const welcome = el.querySelector('.chat-welcome');
+            if (welcome) welcome.remove();
+
+            const msg = document.createElement('div');
+            msg.className = `chat-msg chat-msg-${role}`;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'chat-bubble';
+            bubble.innerHTML = content;
+            msg.appendChild(bubble);
+
+            if (extra) msg.appendChild(extra);
+            el.appendChild(msg);
+            el.scrollTop = el.scrollHeight;
+            return bubble;
+        }
+
+        async function chatSend(text) {
+            if (chatStreaming || !currentBook) return;
+            const input = document.getElementById('chat-input');
+            const message = text || input.value.trim();
+            if (!message) return;
+            input.value = '';
+            input.style.height = 'auto';
+
+            // Add user message
+            chatHistory.push({ role: 'user', content: message });
+            chatAppendMessage('user', escapeHtml(message));
+
+            // Create assistant bubble for streaming
+            const assistantBubble = chatAppendMessage('assistant', '<span class="chat-typing">Thinking...</span>');
+
+            chatStreaming = true;
+            document.getElementById('chat-send-btn').disabled = true;
+            const controller = new AbortController();
+            chatAbort = controller;
+
+            const host = document.getElementById('chat-host').value;
+            const port = document.getElementById('chat-port').value;
+            const temp = parseFloat(document.getElementById('chat-temp').value);
+
+            let fullText = '';
+            let toolCalls = [];
+            let proposals = [];
+
+            try {
+                const resp = await fetch(`/api/books/${currentBook}/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: chatHistory,
+                        host, port: parseInt(port), temperature: temp,
+                    }),
+                    signal: controller.signal,
+                });
+
+                const reader = resp.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                let startedText = false;
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+
+                    for (const line of lines) {
+                        if (!line.startsWith('data: ')) continue;
+                        const dataStr = line.slice(6);
+                        let data;
+                        try { data = JSON.parse(dataStr); } catch { continue; }
+
+                        if (data.type === 'token') {
+                            if (!startedText) {
+                                assistantBubble.innerHTML = '';
+                                startedText = true;
+                            }
+                            fullText += data.content;
+                            assistantBubble.innerHTML = renderMarkdown(fullText);
+                            assistantBubble.closest('.chat-msg').scrollIntoView({ block: 'end', behavior: 'smooth' });
+                        }
+                        else if (data.type === 'thinking') {
+                            if (!startedText) {
+                                assistantBubble.innerHTML = '<span class="chat-thinking">🧠 Thinking...</span>';
+                            }
+                        }
+                        else if (data.type === 'tool_call') {
+                            const pill = document.createElement('div');
+                            pill.className = 'chat-tool-pill';
+                            pill.innerHTML = `🔧 <strong>${data.name}</strong>(${Object.values(data.args || {}).join(', ')})`;
+                            assistantBubble.appendChild(pill);
+                            toolCalls.push(data);
+                        }
+                        else if (data.type === 'tool_result') {
+                            // Silently consumed — the LLM will incorporate this
+                        }
+                        else if (data.type === 'proposal') {
+                            proposals.push(data);
+                        }
+                        else if (data.type === 'error') {
+                            assistantBubble.innerHTML = `<span class="chat-error">❌ ${escapeHtml(data.content)}</span>`;
+                        }
+                        else if (data.type === 'done') {
+                            // Final
+                        }
+                    }
+                }
+            } catch (e) {
+                if (e.name !== 'AbortError') {
+                    assistantBubble.innerHTML = `<span class="chat-error">❌ ${escapeHtml(e.message)}</span>`;
+                }
+            }
+
+            // Save assistant response to history
+            if (fullText) {
+                chatHistory.push({ role: 'assistant', content: fullText });
+            }
+
+            // Show proposal Apply/Dismiss buttons if any
+            for (const p of proposals) {
+                const card = document.createElement('div');
+                card.className = 'chat-proposal-card';
+                card.innerHTML = `
+                    <div class="proposal-header">📋 Proposed Config Change</div>
+                    <div class="proposal-desc">${escapeHtml(p.description)}</div>
+                    <div class="proposal-section">Section: <code>${escapeHtml(p.section)}</code></div>
+                    <div class="proposal-actions">
+                        <button class="btn btn-success proposal-apply">✅ Apply</button>
+                        <button class="btn btn-danger proposal-dismiss">❌ Dismiss</button>
+                    </div>`;
+                assistantBubble.closest('.chat-msg').appendChild(card);
+
+                const applyBtn = card.querySelector('.proposal-apply');
+                const dismissBtn = card.querySelector('.proposal-dismiss');
+
+                // Capture proposal data for the closure
+                const pSection = p.section;
+                const pSectionData = p.section_data;
+
+                applyBtn.addEventListener('click', async () => {
+                    if (!pSectionData) {
+                        toast('No config data in proposal', 'error');
+                        return;
+                    }
+                    try {
+                        await api(`/books/${currentBook}/config`, {
+                            method: 'PUT',
+                            body: JSON.stringify({ config: pSectionData }),
+                        });
+                        card.innerHTML = '<div class="proposal-applied">✅ Applied successfully (backup created)</div>';
+                        toast('Config updated (backup saved)');
+                        // Reload config
+                        const resp = await api(`/books/${currentBook}/config`);
+                        currentConfig = resp.config;
+                    } catch (e) {
+                        toast(e.message, 'error');
+                    }
+                });
+
+                dismissBtn.addEventListener('click', () => {
+                    card.innerHTML = '<div class="proposal-dismissed">❌ Dismissed</div>';
+                });
+            }
+
+            chatStreaming = false;
+            document.getElementById('chat-send-btn').disabled = false;
+            chatAbort = null;
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function renderMarkdown(text) {
+            // Simple markdown: bold, italic, code, paragraphs
+            return text
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                .replace(/\n\n/g, '</p><p>')
+                .replace(/\n/g, '<br>')
+                .replace(/^/, '<p>').replace(/$/, '</p>');
+        }
+
+        // ─── Init ──────────────────────────────────────────────────────
+        async function applyRuntimeSettings() {
+            try {
+                const res = await fetch('/api/settings');
+                if (!res.ok) return;
+                const s = await res.json();
+                const setVal = (id, value) => {
+                    const el = document.getElementById(id);
+                    if (!el || value === undefined || value === null || value === '') return;
+                    el.value = value;
+                };
+                setVal('console-host', s.llm_host);
+                setVal('console-port', s.llm_port);
+                setVal('console-max-tokens', s.max_tokens);
+                setVal('console-temp', s.temperature);
+                setVal('chat-host', s.llm_host);
+                setVal('chat-port', s.llm_port);
+                setVal('genesis-host', s.llm_host);
+                setVal('genesis-port', s.llm_port);
+                const note = document.getElementById('llm-endpoint-note');
+                if (note && s.llm_base_url) {
+                    const model = s.llm_model ? ` · ${s.llm_model}` : '';
+                    note.textContent = `LLM ${s.llm_base_url}${model}`;
+                }
+            } catch (err) {
+                console.warn('GhostWriter settings unavailable', err);
+            }
+        }
+
+        applyRuntimeSettings();
+        loadLibrary();
+    </script>
+</body>
+
+</html>

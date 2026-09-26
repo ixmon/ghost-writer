@@ -216,3 +216,38 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Vim / Neovim swap, backup, and session files
+*.swp
+*.swo
+*~
+Session.vim
+Sessionx.vim
+.netrwhist
+[._]*.s[a-w][a-z]
+[._]s[a-w][a-z]
+*.un~
+# Vim tags
+tags
+tags.*
+# Neovim specific
+*.viminfo
+nvim/.netrwhist
+# Temporary vim files
+.*.sw[a-z]
+.*.*.sw[a-z]
+# Vim plugin manager artifacts (common)
+plugged/
+.vim/plugged/
+# Vim undo files
+.undodir/
+# Vim view/session directories
+.view/
+.session/
+
+# Local runtime config. May contain an API key.
+ghostwriter.toml
+
+# Personal generated media. Not part of the app.
+generated_videos/
+static/videos/

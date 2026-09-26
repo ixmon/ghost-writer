@@ -1,0 +1,30 @@
+[project]
+name = "ghostwriter"
+version = "0.1.0"
+description = "GhostWriter — AI-powered fiction writing system"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Hayden" }]
+dependencies = [
+    "fastapi>=0.136.0",
+    "httpx>=0.28.1",
+    "pyyaml>=6.0.3",
+    "uvicorn>=0.44.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/ixmon/ghost-writer"
+Repository = "https://github.com/ixmon/ghost-writer"
+
+[project.scripts]
+ghostwriter = "ghostwriter:main"
+ghostwriter-web = "server:main"
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["ghostwriter", "server", "settings"]
